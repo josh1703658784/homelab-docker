@@ -1,0 +1,42 @@
+---
+
+# @TODO review these https://teddit.net/r/radarr/comments/hbwnb2/a_list_of_all_companion_tools_and_software/
+# @TODO https://github.com/TheUltimateC0der/Listrr
+
+
+include:
+  - path: ./compose.media-apps.yml
+    env_file:
+      - ./.envrc
+      - ./.secrets
+  - path: ./compose.tailscale-services.yml
+    env_file:
+      - ./.envrc
+      - ./.secrets
+
+
+volumes:
+  tailscale-plex:
+  tailscale-minio:
+  tailscale-radarr:
+  tailscale-sonarr:
+  tailscale-bazarr:
+  tailscale-lidarr:
+  tailscale-readarr:
+  tailscale-prowlarr:
+  tailscale-overseerr:
+  tailscale-sabnzbd-vpn:
+  tailscale-qbittorrentvpn:
+
+  qb-mam-session-cookie:
+
+networks:
+  plex:
+  minio:
+  bazarr:
+  doplarr:
+  sabnzbd:
+  prowlarr:
+  recyclarr:
+  overseerr:
+  qbittorrent:

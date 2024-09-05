@@ -1,0 +1,37 @@
+---
+# @TODO review these https://teddit.net/r/radarr/comments/hbwnb2/a_list_of_all_companion_tools_and_software/
+# @TODO https://github.com/TheUltimateC0der/Listrr
+
+services:
+
+  transmission:
+    image: haugene/transmission-openvpn
+    restart: unless-stopped
+    networks:
+      - transmission
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - ${TRANSMISSION_APP_DATA}/data:/data
+      - ${TRANSMISSION_APP_DATA}/config:/config
+      - ${TRANSMISSION_USER_DATA_DOWNLOADS}:/downloads
+      - ${TRANSMISSION_USER_DATA}/vpn-config:/etc/openvpn/custom/
+    # ipv6 must be disabled for airvpn to work
+    sysctls:
+      - "net.ipv6.conf.all.disable_ipv6=0"
+    environment:
+      - OPENVPN_PROVIDER=custom
+      - OPENVPN_CONFIG=AirVPN_US-LosAngeles_Groombridge_UDP-443-Entry3-7
+      - OPENVPN_USERNAME=dummy
+      - OPENVPN_PASSWORD=dummy
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TRANSMISSION_DOWNLOAD_DIR="/downloads/complete"
+      - TRANSMISSION_INCOMPLETE_DIR="/downloads/incomplete"
+      - TRANSMISSION_INCOMPLETE_DIR_ENABLED="true"
+      - TRANSMISSION_PEER_PORT=${TRANSMISSION_LISTENING_PORT}
+      # - LOCAL_NETWORK=192.168.10.0/16 #,100.64.0.0/10
+    ports:
+      - 127.0.0.1:${TRANSMISSION_EXTERNAL_PORT}:${TRANSMISSION_INTERNAL_PORT}
+

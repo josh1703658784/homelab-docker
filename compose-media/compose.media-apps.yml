@@ -1,0 +1,489 @@
+---
+
+# OFFICIAL: https://tailscale.dev/blog/docker-mod-tailscale
+# UNofficial: docker + tailscale: https://mrpowergamerbr.com/us/blog/2023-03-20-untangling-your-network-tailscale-in-docker-compose/
+
+# TRASH GUIDES: https://trash-guides.info
+# TG / RECYCLARR: https://recyclarr.dev/wiki/
+
+# DEFUALT CAPABILITIES
+# - KILL
+# - CHOWN
+# - MKNOD
+# - SETGID
+# - SETUID
+# - FSETID
+# - FOWNER
+# - NET_RAW
+# - SETFCAP
+# - SETPCAP
+# - SYS_CHROOT
+# - AUDIT_WRITE
+# - DAC_OVERRIDE
+# - NET_BIND_SERVICE
+
+
+# mitigate top-level dir mounting to support hardlinks
+# - /data/media/tv                                      # . mitigate top-level dir mounting
+# - /data/media/music                                   # .
+# - /data/media/movies                                  # .
+#                                                       # .
+# - /data/torrents/tv                                   # .
+# - /data/torrents/music                                # .
+# - /data/torrents/movies                               # .
+# - /data/torrents/incomplete                           # .
+#                                                       # .
+# - /data/usenet/incomplete                             # .
+# - /data/usenet/complete/tv                            # .
+# - /data/usenet/complete/music                         # .
+# - /data/usenet/complete/movies                        # /
+
+
+# tmpfs volume permissions syntax: https://github.com/docker/cli/issues/698#issuecomment-429688027
+
+# https://projectatomic.io/blog/2015/12/making-docker-images-write-only-in-production/
+
+services:
+
+  # upon recreation, will need to add ALC tag 'apple-tv' to give apple-tv access
+  plex:
+    image: lscr.io/linuxserver/plex:latest
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ?error}
+      - PUID=${PUID?error}
+      - PGID=${PGID?error}
+      - VERSION=docker
+      # - S6_READ_ONLY_ROOT=1
+      - TAILSCALE_HOSTNAME=plex
+      - PLEX_CLAIM=${PLEX_CLAIM:-''}
+      - TAILSCALE_SERVE_PORT=${PLEX_PORT?error}
+      - DOCKER_MODS=${TAILSCALE_DOCKER_MOD?error}
+      - TAILSCALE_AUTHKEY=${TAILSCALE_AUTHKEY?error}
+      - TAILSCALE_USE_SSH=${TAILSCALE_USE_SSH?error}
+      - TAILSCALE_STATE_DIR=${TAILSCALE_STATE_DIR?error}
+      - TAILSCALE_SERVE_MODE=${TAILSCALE_SERVE_MODE?error}
+    volumes:
+      - ${PLEX_APP_DATA?error}/config:/config
+      - ${MEDIA_DIRPATH?error}/media/tv:/tv:ro
+      - tailscale-plex:${TAILSCALE_STATE_DIR?error}
+      - ${MEDIA_DIRPATH?error}/media/music:/music:ro
+      - ${MEDIA_DIRPATH?error}/media/movies:/movies:ro
+    tmpfs:
+      - /tmp
+    networks:
+      - plex
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+      - FOWNER                                              # "... Permission denied (/var/lib/apt ..." and others
+      - DAC_OVERRIDE
+
+
+
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ?error}
+      - PGID=${PGID?error}
+      - PUID=${PUID?error}
+      - TAILSCALE_HOSTNAME=radarr
+      - DOCKER_MODS=${TAILSCALE_DOCKER_MOD?error}
+      - TAILSCALE_SERVE_PORT=${RADARR_PORT?error}
+      - TAILSCALE_AUTHKEY=${TAILSCALE_AUTHKEY?error}
+      - TAILSCALE_USE_SSH=${TAILSCALE_USE_SSH?error}
+      - TAILSCALE_STATE_DIR=${TAILSCALE_STATE_DIR?error}
+      - TAILSCALE_SERVE_MODE=${TAILSCALE_SERVE_MODE?error}
+    volumes:
+      - ${MEDIA_DIRPATH?error}:/data                              # mount top-level dir to support hardlinks and atomic moves
+                                                            # /data/media/movies; /data/torrents/movies; /data/usenet/movies;
+      - ${RADARR_APP_DATA?error}/config:/config
+      - tailscale-radarr:${TAILSCALE_STATE_DIR?error}
+    networks:
+      - bazarr
+      - doplarr
+      - sabnzbd
+      - prowlarr
+      - overseerr
+      - recyclarr
+      - qbittorrent
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ?error}
+      - PUID=${PUID?error}
+      - PGID=${PGID?error}
+      - TAILSCALE_HOSTNAME=sonarr
+      - DOCKER_MODS=${TAILSCALE_DOCKER_MOD?error}
+      - TAILSCALE_SERVE_PORT=${SONARR_PORT?error}
+      - TAILSCALE_USE_SSH=${TAILSCALE_USE_SSH?error}
+      - TAILSCALE_AUTHKEY=${TAILSCALE_AUTHKEY?error}
+      - TAILSCALE_STATE_DIR=${TAILSCALE_STATE_DIR?error}
+      - TAILSCALE_SERVE_MODE=${TAILSCALE_SERVE_MODE?error}
+    volumes:
+      - ${MEDIA_DIRPATH?error}:/data                              # mount top-level dir to support hardlinks and atomic moves
+                                                            # /data/media/tv; /data/torrents/tv; /data/usenet/tv;
+      - ${SONARR_APP_DATA?error}/config:/config
+      - tailscale-sonarr:${TAILSCALE_STATE_DIR?error}
+    networks:
+      - bazarr
+      - sabnzbd
+      - doplarr
+      - prowlarr
+      - overseerr
+      - recyclarr
+      - qbittorrent
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+
+
+  lidarr:
+    image: lscr.io/linuxserver/lidarr:latest
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ?error}
+      - PUID=${PUID?error}
+      - PGID=${PGID?error}
+      - TAILSCALE_HOSTNAME=lidarr
+      - DOCKER_MODS=${TAILSCALE_DOCKER_MOD?error}
+      - TAILSCALE_SERVE_PORT=${LIDARR_PORT?error}
+      - TAILSCALE_USE_SSH=${TAILSCALE_USE_SSH?error}
+      - TAILSCALE_AUTHKEY=${TAILSCALE_AUTHKEY?error}
+      - TAILSCALE_STATE_DIR=${TAILSCALE_STATE_DIR?error}
+      - TAILSCALE_SERVE_MODE=${TAILSCALE_SERVE_MODE?error}
+    volumes:
+      - ${MEDIA_DIRPATH?error}:/data                              # mount top-level dir to support hardlinks and atomic moves
+                                                            # /data/media/music; /data/torrents/music; /data/usenet/music;
+      - ${LIDARR_APP_DATA?error}/config:/config
+      - tailscale-lidarr:${TAILSCALE_STATE_DIR?error}
+    tmpfs:
+      - /tmp
+    networks:
+      - sabnzbd
+      - prowlarr
+      - qbittorrent
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+
+  readarr:
+    image: lscr.io/linuxserver/readarr:develop
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ?error}
+      - PUID=${PUID?error}
+      - PGID=${PGID?error}
+      - TAILSCALE_HOSTNAME=readarr
+      - DOCKER_MODS=${TAILSCALE_DOCKER_MOD?error}
+      - TAILSCALE_SERVE_PORT=${READARR_PORT?error}
+      - TAILSCALE_USE_SSH=${TAILSCALE_USE_SSH?error}
+      - TAILSCALE_AUTHKEY=${TAILSCALE_AUTHKEY?error}
+      - TAILSCALE_STATE_DIR=${TAILSCALE_STATE_DIR?error}
+      - TAILSCALE_SERVE_MODE=${TAILSCALE_SERVE_MODE?error}
+    volumes:
+      - ${READARR_APP_DATA?error}/config:/config
+      - tailscale-readarr:${TAILSCALE_STATE_DIR?error}
+      - ${MEDIA_DIRPATH?error}:/data                              # mount top-level dir to support hardlinks and atomic moves
+    tmpfs:
+      - /tmp
+    networks:
+      - sabnzbd
+      - qbittorrent
+      - prowlarr
+
+
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ?error}
+      - PUID=${PUID?error}
+      - PGID=${PGID?error}
+      - TAILSCALE_HOSTNAME=prowlarr
+      - DOCKER_MODS=${TAILSCALE_DOCKER_MOD?error}
+      - TAILSCALE_SERVE_PORT=${PROWLARR_PORT?error}
+      - TAILSCALE_USE_SSH=${TAILSCALE_USE_SSH?error}
+      - TAILSCALE_AUTHKEY=${TAILSCALE_AUTHKEY?error}
+      - TAILSCALE_STATE_DIR=${TAILSCALE_STATE_DIR?error}
+      - TAILSCALE_SERVE_MODE=${TAILSCALE_SERVE_MODE?error}
+    volumes:
+      - ${PROWLARR_APP_DATA?error}/config:/config
+      - tailscale-prowlarr:${TAILSCALE_STATE_DIR?error}
+    tmpfs:
+      - /tmp
+    networks:
+      - prowlarr
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+
+
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ?error}
+      - PUID=${PUID?error}
+      - PGID=${PGID?error}
+      - TAILSCALE_HOSTNAME=bazarr
+      - DOCKER_MODS=${TAILSCALE_DOCKER_MOD?error}
+      - TAILSCALE_SERVE_PORT=${BAZARR_PORT?error}
+      - TAILSCALE_USE_SSH=${TAILSCALE_USE_SSH?error}
+      - TAILSCALE_AUTHKEY=${TAILSCALE_AUTHKEY?error}
+      - TAILSCALE_STATE_DIR=${TAILSCALE_STATE_DIR?error}
+      - TAILSCALE_SERVE_MODE=${TAILSCALE_SERVE_MODE?error}
+    volumes:
+      - ${MEDIA_DIRPATH?error}:/data                              # mount top-level dir to support hardlinks and atomic moves
+                                                            # /data/media/movies; /data/media/tv;
+      - ${BAZARR_APP_DATA?error}/config:/config
+      - tailscale-bazarr:${TAILSCALE_STATE_DIR?error}
+    tmpfs:
+      - /tmp
+    networks:
+      - bazarr
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+
+
+  qb:
+    image: binhex/arch-qbittorrentvpn:latest
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ?error}
+      - PUID=${PUID?error}
+      - PGID=${PGID?error}
+      - VPN_ENABLED=yes
+      - WEBUI_PORT=${QBITTORRENT_INTERNAL_PORT?error}
+      - VPN_PROV=${BINHEX_VPN_PROVIDER?error}
+      - VPN_CLIENT=${BINHEX_VPN_CLIENT?error}
+      - LAN_NETWORK=${BINHEX_LAN_NETWORK?error}
+      - NAME_SERVERS=${BINHEX_NAME_SERVERS?error}
+      - MAM_SESSION_COOKIE=${MAM_SESSION_COOKIE?error}
+      # - VPN_OPTIONS=--script-security 2 --route-up /vpn-scripts/update-mam-dynamic-ip.sh
+      # - VPN_OPTIONS=--up /vpn-scripts/update-mam-dynamic-ip.sh
+    volumes:
+      - ${QBITTORRENT_APP_DATA?error}/data:/data
+      - ${QBITTORRENT_APP_DATA?error}/config:/config
+      - ${MEDIA_DIRPATH?error}/torrents:/data/torrents                  # torrent downloads go here
+      - ${QBITTORRENT_USER_DATA?error}/airvpn-config:/config/openvpn:ro # expected: "sed: couldn't open temporary file /config/openvpn/sed<random>: Read-only file system"
+      - ${QBITTORRENT_USER_DATA?error}/vpn-scripts:/vpn-scripts:ro
+      # - ${QBITTORRENT_USER_DATA?error}/themes:/themes:ro
+      - qb-mam-session-cookie:/mam-session-cookie
+    tmpfs:
+      - /tmp
+    networks:
+      - qbittorrent
+    ports:                                                                    # https://docs.docker.com/network/#published-ports
+      - 127.0.0.1:${QBITTORRENT_EXTERNAL_PORT}:${QBITTORRENT_INTERNAL_PORT?error}   # bind to host loopback
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+      - MKNOD                                                     # create tun device if not mounted from host
+      - NET_RAW                                                   # "can't initialize iptables table `filter': Permission denied"
+      - NET_ADMIN                                                 # required to establish vpn tunnel
+
+
+
+  sab:
+    image: binhex/arch-sabnzbdvpn:latest
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ?error}
+      - PUID=${PUID?error}
+      - PGID=${PGID?error}
+      - VPN_ENABLED=yes
+      - VPN_PROV=${BINHEX_VPN_PROVIDER?error}
+      - VPN_CLIENT=${BINHEX_VPN_CLIENT?error}
+      - LAN_NETWORK=${BINHEX_LAN_NETWORK?error}
+      - NAME_SERVERS=${BINHEX_NAME_SERVERS?error}
+    volumes:
+      - ${SABNZBD_APP_DATA?error}/config:/config
+      - ${MEDIA_DIRPATH?error}/usenet:/data/usenet                            # nzb downloads go here
+      - ${SABNZBD_USER_DATA?error}/scripts:/scripts:ro,exec
+      - ${SABNZBD_USER_DATA?error}/airvpn-config:/config/openvpn:ro       # expected "sed: couldn't open temporary file /config/openvpn/sed<random>: Read-only file system"
+      - ${SABNZBD_APP_DATA?error}/nzb-file-backups:/nzb-file-backups
+      - ${SABNZBD_APP_DATA?error}/automated-configs-backup:/automated-configs-backup
+    tmpfs:
+      - /tmp
+    networks:
+      - sabnzbd
+    ports:
+      - 127.0.0.1:${SABNZBD_EXTERNAL_PORT}:${SABNZBD_INTERNAL_PORT?error}     # bind to host loopback
+    # cap_drop:
+      # - ALL
+    cap_add:
+      - CHOWN                                                           # chown: changing ownership of '/usr/...': Operation not permitted
+      - SETGID                                                          # couldn't setuid to 65534: Could not set groups of effective user
+      - SETUID                                                          # child process was not spawned
+      - MKNOD                                                           # create tun device if not mounted from host
+      - NET_RAW                                                         # iptables v1.8.10 (legacy): can't initialize iptables table `filter'
+      - NET_ADMIN                                                       # required to establish vpn tunnel
+      - FSETID
+      - FOWNER
+
+
+  unpackerr:
+    image: golift/unpackerr:latest
+    user: ${PUID}:${PGID?error}
+    environment:
+      - UMASK=002
+      - TZ=${TZ?error}
+    volumes:
+      - ${UNPACKERR_APP_DATA?error}/config:/config
+      - ${MEDIA_DIRPATH?error}:/data                              # mount top-level dir to support hardlinks and atomic moves
+
+
+  overseerr:
+    image: lscr.io/linuxserver/overseerr:latest
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ?error}
+      - PUID=${PUID?error}
+      - PGID=${PGID?error}
+      # - S6_READ_ONLY_ROOT=1
+      - TAILSCALE_HOSTNAME=overseerr
+      - DOCKER_MODS=${TAILSCALE_DOCKER_MOD?error}
+      - TAILSCALE_SERVE_PORT=${OVERSEERR_PORT?error}
+      - TAILSCALE_USE_SSH=${TAILSCALE_USE_SSH?error}
+      - TAILSCALE_AUTHKEY=${TAILSCALE_AUTHKEY?error}
+      - TAILSCALE_STATE_DIR=${TAILSCALE_STATE_DIR?error}
+      - TAILSCALE_SERVE_MODE=${TAILSCALE_SERVE_MODE?error}
+    volumes:
+      # - /app                                          # "chown: changing ownership of '/app': Read-only file system"
+      # - /etc                                          # "usermod: /etc/passwd.86: Read-only file system"
+      # - /usr/bin                                      # "/docker-mods: line 148: /usr/bin/with-contenv: Read-only file system"
+      - ${OVERSEERR_APP_DATA?error}/config:/config
+      - tailscale-overseerr:${TAILSCALE_STATE_DIR?error}
+    # tmpfs:
+    #   - /tmp:noexec,nosuid,nodev,noatime
+    #   - /var/run:exec #,nosuid,nodev,noatime                                        # documented s6 readonly
+    #   - /run:exec #,nosuid,nodev,noatime                                        # documented s6 readonly
+    #   - /defaults:noexec,nosuid,nodev,noatime                                     # empty dir "chown: changing ownership of '/defaults': Read-only file system"
+    #   - /etc/services.d:noexec,nosuid,nodev,noatime                               # "mkdir: cannot create directory"
+    #   - /etc/cont-init.d:noexec,nosuid,nodev,noatime                              # "mkdir: cannot create directory
+    networks:
+      - plex
+      - overseerr
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+
+
+  doplarr:
+    image: lscr.io/linuxserver/doplarr:latest
+    read_only: true
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ?error}
+      - PUID=${PUID?error}
+      - PGID=${PGID?error}
+      - LOG_LEVEL=:info                               # optional
+      - S6_READ_ONLY_ROOT=1
+      - PARTIAL_SEASONS=true                          # optional
+      - DISCORD__MAX_RESULTS=25                       # optional
+      - SONARR__API=${SONARR_API_KEY?error}
+      - RADARR__API=${RADARR_API_KEY?error}
+      - DISCORD__TOKEN=${DISCORD_TOKEN?error}
+      - DISCORD__REQUESTED_MSG_STYLE=:plain           # optional
+      - RADARR__URL=http://radarr:${RADARR_PORT?error}
+      - SONARR__URL=http://sonarr:${SONARR_PORT?error}
+      - SONARR__QUALITY_PROFILE=Recyclarr | Default
+      - RADARR__QUALITY_PROFILE=Recyclarr | Default
+    volumes:
+      - /app                                          # "chown: changing ownership of '/app': Read-only file system"
+      - /etc                                          # "usermod: /etc/passwd.86: Read-only file system"
+      - /usr/bin                                      # "/docker-mods: line 148: /usr/bin/with-contenv: Read-only file system"
+      - ${DOPLARR_APP_DATA?error}/config:/config
+    tmpfs:
+      - /tmp:noexec,nosuid,nodev,noatime
+      - /var/run:exec,nosuid,nodev,noatime                                        # documented s6 readonly
+      - /defaults:noexec,nosuid,nodev,noatime                                     # empty dir "chown: changing ownership of '/defaults': Read-only file system"
+      - /etc/services.d:noexec,nosuid,nodev,noatime                               # "mkdir: cannot create directory"
+      - /etc/cont-init.d:noexec,nosuid,nodev,noatime                              # "mkdir: cannot create directory
+    networks:
+      - doplarr
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+
+
+  plex-meta-manager:
+    image: lscr.io/linuxserver/plex-meta-manager:latest
+    #image: meisnate12/plex-meta-manager
+    # restart: no
+    environment:
+      - TZ=${TZ?error}
+      - PUID=${PUID?error}
+      - PGID=${PGID?error}
+      - PMM_RUN=True #False                               # set to 'True' to execute immediately
+      # - PMM_TIME=06:00                              # run after plex nightly schedule
+      # - S6_READ_ONLY_ROOT=1
+      - PMM_NO_MISSING=true
+      - PMM_DELETE_COLLECTIONS=False                # set to 'True' to clear all collections before running
+    volumes:
+      - ${PLEX_META_MANAGER_APP_DATA?error}/config:/config
+    networks:
+      - plex
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+
+
+  # SYNC TRASH GUIDES SETTINGS (AND OTHERS) TO SONARR AND RADARR
+  recyclarr:
+    image: ghcr.io/recyclarr/recyclarr:latest
+    read_only: true
+    user: ${PUID}:${PGID?error}
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ?error}
+      - RECYCLARR_CREATE_CONFIG=true
+    volumes:
+      - ${RECYCLARR_APP_DATA?error}/config:/config
+    tmpfs:
+      - /tmp
+    networks:
+      - recyclarr
+    cap_drop:
+      - ALL

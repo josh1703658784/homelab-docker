@@ -1,0 +1,61 @@
+---
+
+services:
+
+
+
+  sab-ts:
+    # image: lscr.io/linuxserver/baseimage-alpine:3.19
+    image: lscr.io/linuxserver/baseimage-alpine:3.20
+    restart: always
+    network_mode: host
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TAILSCALE_HOSTNAME=sab
+      - DOCKER_MODS=${TAILSCALE_DOCKER_MOD}
+      - TAILSCALE_USE_SSH=${TAILSCALE_USE_SSH}
+      - TAILSCALE_AUTHKEY=${TAILSCALE_AUTHKEY}
+      - TAILSCALE_STATE_DIR=${TAILSCALE_STATE_DIR}
+      - TAILSCALE_SERVE_MODE=${TAILSCALE_SERVE_MODE}
+      - TAILSCALE_SERVE_PORT=${SABNZBD_EXTERNAL_PORT}
+    volumes:
+      - tailscale-sabnzbd-vpn:${TAILSCALE_STATE_DIR}
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+
+
+  qb-ts:
+    # image: lscr.io/linuxserver/baseimage-alpine:3.19
+    image: lscr.io/linuxserver/baseimage-alpine:3.20
+    restart: always
+    network_mode: host
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TAILSCALE_HOSTNAME=qb
+      - DOCKER_MODS=${TAILSCALE_DOCKER_MOD}
+      - TAILSCALE_USE_SSH=${TAILSCALE_USE_SSH}
+      - TAILSCALE_AUTHKEY=${TAILSCALE_AUTHKEY}
+      - TAILSCALE_SERVE_PORT=${QBITTORRENT_EXTERNAL_PORT}
+      - TAILSCALE_STATE_DIR=${TAILSCALE_STATE_DIR}
+      - TAILSCALE_SERVE_MODE=${TAILSCALE_SERVE_MODE}
+    volumes:
+      - tailscale-qbittorrentvpn:${TAILSCALE_STATE_DIR}
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+

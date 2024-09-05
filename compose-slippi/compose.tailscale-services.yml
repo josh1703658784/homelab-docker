@@ -1,0 +1,61 @@
+---
+# @TODO review these https://teddit.net/r/radarr/comments/hbwnb2/a_list_of_all_companion_tools_and_software/
+# @TODO https://github.com/TheUltimateC0der/Listrr
+
+services:
+
+
+
+  transmission-tailscale:
+    image: lscr.io/linuxserver/baseimage-alpine:3.20
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TAILSCALE_HOSTNAME=transmission-slippi
+      - DOCKER_MODS=${TAILSCALE_DOCKER_MOD}
+      - TAILSCALE_USE_SSH=${TAILSCALE_USE_SSH}
+      - TAILSCALE_AUTHKEY=${TAILSCALE_AUTHKEY}
+      - TAILSCALE_SERVE_PORT=${TRANSMISSION_EXTERNAL_PORT}
+      - TAILSCALE_STATE_DIR=${TAILSCALE_STATE_DIR}
+      - TAILSCALE_SERVE_MODE=${TAILSCALE_SERVE_MODE}
+    volumes:
+      - tailscale-transmission:${TAILSCALE_STATE_DIR}
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+
+
+
+  dsm-filestation-tailscale:
+    image: lscr.io/linuxserver/baseimage-alpine:3.20
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TAILSCALE_HOSTNAME=fs-slippi
+      - TAILSCALE_SERVE_PORT=${DSM_FILESTATION_PORT}
+      - DOCKER_MODS=${TAILSCALE_DOCKER_MOD}
+      - TAILSCALE_USE_SSH=${TAILSCALE_USE_SSH}
+      - TAILSCALE_AUTHKEY=${TAILSCALE_AUTHKEY}
+      - TAILSCALE_STATE_DIR=${TAILSCALE_STATE_DIR}
+      - TAILSCALE_SERVE_MODE=${TAILSCALE_SERVE_MODE}
+    volumes:
+      - tailscale-dsm-filestation:${TAILSCALE_STATE_DIR}
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID

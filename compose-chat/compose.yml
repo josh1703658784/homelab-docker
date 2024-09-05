@@ -1,0 +1,20 @@
+---
+
+name: chat
+
+include:
+  - path: ./compose.chat-apps.yml
+    env_file:
+      - ./.envrc
+      - ./.secrets
+  - path: ./compose.tailscale-services.yml
+    env_file:
+      - ./.envrc
+      - ./.secrets
+
+volumes:
+  postgres-data:
+  tailscale-matrix:
+
+networks:
+  matrix:

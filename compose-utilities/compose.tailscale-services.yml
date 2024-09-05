@@ -1,0 +1,144 @@
+---
+
+services:
+  
+  # test-ts:
+  #   image: ghcr.io/josh1703658784/tailscale-serve-https:v1.72.1
+  #   network_mode: host
+  #   environment:
+  #     - TZ=${TZ}
+  #     - PUID=${PUID}
+  #     - PGID=${PGID}
+  #     - TS_AUTHKEY=${TAILSCALE_AUTHKEY}
+  #     # - TS_SERVE_CONFIG=/config/fileserver.json
+  #     - LOCAL_PORT=${DSM_EXTERNAL_PORT}
+  #     - TS_STATE_DIR=${TAILSCALE_STATE_DIR}
+  #     - TS_HOSTNAME=test
+  #     - TS_USERSPACE=true
+  #     - TS_ACCEPT_DNS=true
+  #   volumes:
+  #     - ${TAILSCALE_STATE_DIR?error}
+  #     # - ${TAILSCALE_SERVE_CONFIGS}:/config:ro
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "tailscale status"]
+  #     interval: 1s
+  #     timeout: 5s
+  #     retries: 60
+  #   cap_add:
+  #     - net_admin
+  #     - sys_module
+  #   restart: unless-stopped
+    
+    
+    
+
+
+  dsm-ts:
+    image: tailscale/tailscale:latest
+    network_mode: host
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TS_AUTHKEY=${TAILSCALE_AUTHKEY}
+      - TS_STATE_DIR=${TAILSCALE_STATE_DIR}
+      - TS_SERVE_CONFIG=/config/dsm.json
+      - TS_USERSPACE=true
+      - TS_HOSTNAME=dsm
+      - TS_ACCEPT_DNS=true
+    volumes:
+      - dsm2-ts:${TAILSCALE_STATE_DIR?error}
+      - ${TAILSCALE_SERVE_CONFIGS}:/config:ro
+      - /dev/net/tun:/dev/net/tun:ro
+    healthcheck:
+      test: ["CMD-SHELL", "tailscale status"]
+      interval: 1s
+      timeout: 5s
+      retries: 60
+    cap_add:
+      - net_admin
+      - sys_module
+    restart: unless-stopped
+# 
+#   rclone-ts:
+#     image: tailscale/tailscale:latest
+#     environment:
+#       - TZ=${TZ}
+#       - PUID=${PUID}
+#       - PGID=${PGID}
+#       - TS_AUTHKEY=${TAILSCALE_AUTHKEY}
+#       - TS_STATE_DIR=${TAILSCALE_STATE_DIR}
+#       - TS_USERSPACE=false
+#       - TS_HOSTNAME=rclone
+#       - TS_ACCEPT_DNS=true
+#       - TS_AUTH_ONCE=true
+#     volumes:
+#       - rclone-ts:${TAILSCALE_STATE_DIR?error}
+#       - /dev/net/tun:/dev/net/tun:ro
+#     healthcheck:
+#       test: ["CMD-SHELL", "tailscale status"]
+#       interval: 1s
+#       timeout: 5s
+#       retries: 60
+#     cap_add:
+#       - net_admin
+#       - sys_module
+#     networks:
+#       - rclone-ts
+#     restart: unless-stopped
+
+
+
+  # simple file server
+  fileserver-ts:
+    image: tailscale/tailscale:latest
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TS_AUTHKEY=${TAILSCALE_AUTHKEY}
+      - TS_SERVE_CONFIG=/config/fileserver.json
+      - TS_STATE_DIR=${TAILSCALE_STATE_DIR}
+      - TS_HOSTNAME=fileserver
+      - TS_USERSPACE=true
+      - TS_ACCEPT_DNS=true
+    volumes:
+      - fileserver-ts:${TAILSCALE_STATE_DIR?error}
+      - ${TAILSCALE_SERVE_CONFIGS}:/config:ro
+      - /volume1/downloaded-media/data/media/movies:/downloads/movies:ro
+      - /volume1/downloaded-media/data/media/books:/downloads/books:ro
+      - /volume1/downloaded-media/data/media/tv:/downloads/tv:ro
+      - /volume1/downloaded-media-slippi/transmission-downloads/complete:/downloads/slippi/music/downlods:ro
+    healthcheck:
+      test: ["CMD-SHELL", "tailscale status"]
+      interval: 1s
+      timeout: 5s
+      retries: 60
+    cap_add:
+      - net_admin
+      - sys_module
+    networks:
+      - fileserver-ts
+    restart: unless-stopped
+
+  # dev-ts:
+  #   image: tailscale/tailscale:latest
+  #   environment:
+  #     - TZ=${TZ}
+  #     - PUID=${PUID}
+  #     - PGID=${PGID}
+  #     - TS_AUTHKEY=${TAILSCALE_AUTHKEY}
+  #     - TS_SERVE_CONFIG=/config/fileserver.json
+  #     - TS_STATE_DIR=${TAILSCALE_STATE_DIR}
+  #     - TS_HOSTNAME=dev-server
+  #     - TS_USERSPACE=true
+  #     - TS_ACCEPT_DNS=true
+  #   volumes:
+  #     - ${TAILSCALE_STATE_DIR?error}
+  #     - ${TAILSCALE_SERVE_CONFIGS}:/config:ro
+  #   cap_add:
+  #     - net_admin
+  #     - sys_module
+  #   restart: unless-stopped
+
+

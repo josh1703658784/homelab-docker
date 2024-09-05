@@ -1,0 +1,35 @@
+---
+
+# @TODO review these https://teddit.net/r/radarr/comments/hbwnb2/a_list_of_all_companion_tools_and_software/
+# @TODO https://github.com/TheUltimateC0der/Listrr
+
+
+include:
+  - path: ./compose.utility-apps.yml
+    env_file:
+      - ./.envrc
+      - ./.secrets
+
+  - path: ./compose.tailscale-services.yml
+    env_file:
+      - ./.envrc
+      - ./.secrets
+
+
+
+volumes:
+  tailscale-dsm:
+  # tailscale-fresh-rss:
+  tailscale-fake-data-generator:
+  rclone-ts:
+  fileserver-ts:
+  dsm2-ts:
+
+
+networks:
+  fake-data-generator:
+  # fresh-rss:
+  rclone-ts:
+  fileserver-ts:
+  dev-ts:
+

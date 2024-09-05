@@ -1,0 +1,29 @@
+---
+
+services:
+
+  matrix-ts:
+    image: lscr.io/linuxserver/baseimage-alpine:3.20
+    restart: always
+    network_mode: host
+    environment:
+      - TZ=${TZ?error}
+      - PUID=${PUID?error}
+      - PGID=${PGID?error}
+      - TAILSCALE_HOSTNAME=matrix
+      - TAILSCALE_SERVE_PORT=${MATRIX_EXTERNAL_PORT?error}
+      - DOCKER_MODS=${TAILSCALE_DOCKER_MOD?error}
+      - TAILSCALE_USE_SSH=${TAILSCALE_USE_SSH?error}
+      - TAILSCALE_AUTHKEY=${TAILSCALE_AUTHKEY?error}
+      - TAILSCALE_STATE_DIR=${TAILSCALE_STATE_DIR?error}
+      - TAILSCALE_SERVE_MODE=${TAILSCALE_SERVE_MODE?error}
+    volumes:
+      - tailscale-matrix:${TAILSCALE_STATE_DIR?error}
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID

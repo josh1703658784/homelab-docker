@@ -1,0 +1,66 @@
+---
+
+# OFFICIAL: https://tailscale.dev/blog/docker-mod-tailscale
+# UNofficial: docker + tailscale: https://mrpowergamerbr.com/us/blog/2023-03-20-untangling-your-network-tailscale-in-docker-compose/
+
+
+services:
+
+
+  miniflux-ts:
+    image: tailscale/tailscale:latest
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TS_AUTHKEY=${TAILSCALE_AUTHKEY}
+      - TS_STATE_DIR=${TAILSCALE_STATE_DIR}
+      - TS_USERSPACE=false
+      - TS_HOSTNAME=miniflux
+      - TS_SERVE_CONFIG=/config/miniflux.json
+    volumes:
+      - miniflux-ts-state:${TAILSCALE_STATE_DIR?error}
+      - ${TAILSCALE_SERVE_CONFIGS}:/config:ro
+      - /dev/net/tun:/dev/net/tun:ro
+    healthcheck:
+      test: ["CMD-SHELL", "tailscale status"]
+      interval: 1s
+      timeout: 5s
+      retries: 60
+    cap_add:
+      - net_admin
+      - sys_module
+    networks:
+      - miniflux
+    restart: unless-stopped
+
+  miniflux:
+    image: miniflux/miniflux:latest
+    healthcheck:
+      test: ["CMD", "/usr/bin/miniflux", "-healthcheck", "auto"]
+    depends_on:
+      db:
+        condition: service_healthy
+      miniflux-ts:
+        condition: service_healthy
+    network_mode: service:miniflux-ts
+    environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB}?sslmode=disable
+      - RUN_MIGRATIONS=1
+      - CREATE_ADMIN=1
+      - ADMIN_USERNAME=${MINIFLUX_USER}
+      - ADMIN_PASSWORD=${MINIFLUX_PASS}
+
+  db:
+    image: postgres:15
+    networks:
+      - miniflux
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - miniflux-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "miniflux"]
+      interval: 10s

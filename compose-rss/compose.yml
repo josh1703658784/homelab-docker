@@ -1,0 +1,23 @@
+---
+
+# @TODO review these https://teddit.net/r/radarr/comments/hbwnb2/a_list_of_all_companion_tools_and_software/
+# @TODO https://github.com/TheUltimateC0der/Listrr
+
+
+include:
+  - path: ./compose.rss-apps.yml
+    env_file:
+      - ./.envrc
+      - ./.secrets
+  # - path: ./compose.tailscale-services.yml
+  #   env_file:
+  #     - ./.envrc
+  #     - ./.secrets
+
+
+volumes:
+  miniflux-ts-state:
+  miniflux-db:
+
+networks:
+  miniflux:

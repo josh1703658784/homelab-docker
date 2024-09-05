@@ -1,0 +1,12 @@
+*.swp
+*.conf
+*.secrets
+*.no_commit
+
+.nova
+.DS_Store
+recyclarr.yml
+keyfile_password
+compose.media-extra.yml
+service-configs.sync/
+nova-tasks/

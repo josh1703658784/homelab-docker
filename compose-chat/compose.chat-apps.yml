@@ -1,0 +1,86 @@
+---
+
+# OFFICIAL: https://tailscale.dev/blog/docker-mod-tailscale
+# UNofficial: docker + tailscale: https://mrpowergamerbr.com/us/blog/2023-03-20-untangling-your-network-tailscale-in-docker-compose/
+
+#@TODO  https://mszpro.com/blog/matrix-sliding-sync/
+
+
+services:
+  heisenbridge:
+    image: hif1/heisenbridge:latest
+    volumes:
+      - ${MATRIX_APP_DATA?error}/data:/data
+  #     - ./init/heisenbridge-init.sh:/heisenbridge-init.sh:ro
+      # - synapse-data:/data
+
+  #   entrypoint: /heisenbridge-init.sh
+  # volumes:
+    networks:
+      - matrix
+    # command: python -m heisenbridge -c /data/heisenbridge.yaml --generate --listen-address heisenbridge
+    # command: -c /data/heisenbridge.yaml --generate --listen-address heisenbridge
+    # command: python -m heisenbridge -c /data/heisenbridge.yaml --listen-address 0.0.0.0 http://homeserver:8008
+    command: -c /data/heisenbridge.yaml --listen-address 0.0.0.0 http://matrix:${MATRIX_INTERNAL_PORT}
+
+  matrix:
+    image: matrixdotorg/synapse:latest
+    environment:
+      - SYNAPSE_SERVER_NAME=${MATRIX_SERVER_NAME?error}
+      - SYNAPSE_REPORT_STATS=${MATRIX_REPORT_STATS?error}
+      - UID=${PUID?error}
+      - GID=${PGID?error}
+      - TZ=${TZ?error}
+    ports:
+      - 127.0.0.1:${MATRIX_EXTERNAL_PORT}:${MATRIX_INTERNAL_PORT?error}     # bind to host loopback
+    volumes:
+      # - ./init/synapse-init.sh:/synapse-init.sh:ro
+      - ${MATRIX_APP_DATA?error}/data:/data
+    networks:
+      - matrix
+    # command: generate
+    # entrypoint: /synapse-init.sh
+
+  sliding-sync:
+    image: ghcr.io/matrix-org/sliding-sync:latest
+    environment:
+      SYNCV3_SERVER: http://matrix:${MATRIX_INTERNAL_PORT?error}
+      SYNCV3_SECRET: ${SLIDING_SYNC_SECRET?error}
+      SYNCV3_BINDADDR: :${SLIDING_SYNC_INTERNAL_PORT?error}
+      # SYNCV3_DB: user=$(whoami) dbname=syncv3 sslmode=disable host=host.docker.internal password='${MAXTRIX_POSTGRES_PASSWORD?error}'
+      SYNCV3_DB: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD?error?error}@postgres:${POSTGRES_PORT}/syncv3?sslmode=disable"
+    depends_on:
+      - postgres
+    networks:
+      - matrix
+
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: syncv3
+      POSTGRES_USER: ${POSTGRES_USER?error}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD?error}
+    networks:
+      - matrix
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  znc:
+    image: lscr.io/linuxserver/znc:latest
+    environment:
+      - PUID=${PUID?error}
+      - PGID=${PGID?error}
+      - TZ=${TZ?error}
+      - TAILSCALE_HOSTNAME=znc
+      - TAILSCALE_SERVE_PORT=${ZNC_PORT?error}
+      - DOCKER_MODS=${TAILSCALE_DOCKER_MOD?error}
+      - TAILSCALE_AUTHKEY=${TAILSCALE_AUTHKEY?error}
+      - TAILSCALE_USE_SSH=${TAILSCALE_USE_SSH?error}
+      - TAILSCALE_STATE_DIR=${TAILSCALE_STATE_DIR?error}
+      - TAILSCALE_SERVE_MODE=${TAILSCALE_SERVE_MODE?error}
+    volumes:
+      - ${ZNC_APP_DATA?error}/config:/config
+    networks:
+      - matrix
+    restart: unless-stopped
+
