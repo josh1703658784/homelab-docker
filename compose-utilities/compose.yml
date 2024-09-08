@@ -18,18 +18,13 @@ include:
 
 
 volumes:
+  dsm-ts:
   tailscale-dsm:
-  # tailscale-fresh-rss:
   tailscale-fake-data-generator:
-  rclone-ts:
   fileserver-ts:
-  dsm2-ts:
 
 
 networks:
   fake-data-generator:
-  # fresh-rss:
-  rclone-ts:
   fileserver-ts:
-  dev-ts:
 

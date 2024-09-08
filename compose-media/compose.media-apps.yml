@@ -112,8 +112,8 @@ services:
       - overseerr
       - recyclarr
       - qbittorrent
-    cap_drop:
-      - ALL
+    # cap_drop:
+      # - ALL
     cap_add:
       - CHOWN
       - SETGID
@@ -147,8 +147,8 @@ services:
       - overseerr
       - recyclarr
       - qbittorrent
-    cap_drop:
-      - ALL
+    # cap_drop:
+      # - ALL
     cap_add:
       - CHOWN
       - SETGID
@@ -180,8 +180,8 @@ services:
       - sabnzbd
       - prowlarr
       - qbittorrent
-    cap_drop:
-      - ALL
+    # cap_drop:
+      # - ALL
     cap_add:
       - CHOWN
       - SETGID
@@ -235,8 +235,8 @@ services:
       - /tmp
     networks:
       - prowlarr
-    cap_drop:
-      - ALL
+    # cap_drop:
+      # - ALL
     cap_add:
       - CHOWN
       - SETGID
@@ -396,8 +396,8 @@ services:
     networks:
       - plex
       - overseerr
-    cap_drop:
-      - ALL
+    # cap_drop:
+      # - ALL
     cap_add:
       - CHOWN
       - SETGID

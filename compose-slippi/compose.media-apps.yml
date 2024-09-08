@@ -7,8 +7,11 @@ services:
   transmission:
     image: haugene/transmission-openvpn
     restart: unless-stopped
-    networks:
-      - transmission
+    # networks:
+      # - transmission
+    network_mode: service:transmission-ts
+    depends_on:
+    - transmission-ts
     cap_add:
       - NET_ADMIN
     volumes:
@@ -32,6 +35,6 @@ services:
       - TRANSMISSION_INCOMPLETE_DIR_ENABLED="true"
       - TRANSMISSION_PEER_PORT=${TRANSMISSION_LISTENING_PORT}
       # - LOCAL_NETWORK=192.168.10.0/16 #,100.64.0.0/10
-    ports:
-      - 127.0.0.1:${TRANSMISSION_EXTERNAL_PORT}:${TRANSMISSION_INTERNAL_PORT}
-
+    # ports:
+      # - 127.0.0.1:${TRANSMISSION_EXTERNAL_PORT}:${TRANSMISSION_INTERNAL_PORT}
+#

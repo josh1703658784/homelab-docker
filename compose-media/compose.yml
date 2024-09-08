@@ -40,3 +40,4 @@ networks:
   recyclarr:
   overseerr:
   qbittorrent:
+  lidarr-ts:

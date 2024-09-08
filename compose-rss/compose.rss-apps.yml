@@ -41,8 +41,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      miniflux-ts:
-        condition: service_healthy
+      # miniflux-ts:
+        # condition: service_healthy
     network_mode: service:miniflux-ts
     environment:
       - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB}?sslmode=disable
