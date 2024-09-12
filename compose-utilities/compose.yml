@@ -17,14 +17,9 @@ include:
 
 
 
-volumes:
-  dsm-ts:
-  tailscale-dsm:
-  tailscale-fake-data-generator:
-  fileserver-ts:
-
-
 networks:
   fake-data-generator:
-  fileserver-ts:
+  fileserver:
+  portainer:
+    internal: true
 

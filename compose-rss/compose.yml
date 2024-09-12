@@ -9,15 +9,7 @@ include:
     env_file:
       - ./.envrc
       - ./.secrets
-  # - path: ./compose.tailscale-services.yml
-  #   env_file:
-  #     - ./.envrc
-  #     - ./.secrets
 
-
-volumes:
-  miniflux-ts-state:
-  miniflux-db:
 
 networks:
   miniflux:

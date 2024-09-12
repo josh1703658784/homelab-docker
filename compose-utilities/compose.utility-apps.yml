@@ -2,19 +2,17 @@
 
 services:
 
-  fake-data-generator:
+  fake-data-generator-svc:
     image: ghcr.io/josh1703658784/fake-address-generator-docker:feature-hardcode-selected-states
-    volumes:
-      - tailscale-fake-data-generator:/var/lib/tailscale
-    environment:
-      - TAILSCALE_HOSTNAME=fake-data-generator
-      - TAILSCALE_SERVE_PORT=${FAKE_DATA_GENERATOR_PORT?error}
-      - DOCKER_MODS=${TAILSCALE_DOCKER_MOD?error}
-      - TAILSCALE_AUTHKEY=${TAILSCALE_AUTHKEY?error}
-      - TAILSCALE_USE_SSH=${TAILSCALE_USE_SSH?error}
-      - TAILSCALE_STATE_DIR=${TAILSCALE_STATE_DIR?error}
-      - TAILSCALE_SERVE_MODE=${TAILSCALE_SERVE_MODE?error}
-    networks:
-      - fake-data-generator
+    network_mode: service:fake-data-generator
     restart: unless-stopped
 
+
+
+  portainer-svc:
+    image: portainer/portainer-ce:2.21.1
+    restart: unless-stopped
+    network_mode: service:portainer
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${PORTAINER_APP_DATA?error}/data:/data

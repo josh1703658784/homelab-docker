@@ -14,7 +14,6 @@ include:
 
 volumes:
   postgres-data:
-  tailscale-matrix:
 
 networks:
   matrix:

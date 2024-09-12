@@ -4,30 +4,21 @@
 
 services:
 
-
-  transmission-ts:
-    image: ghcr.io/josh1703658784/tailscale-serve-https:v1.72.1
+  transmission:
+    extends:
+      file: ./../common/services.yml
+      service: tailscale-proxy
+    environment:
+      - TS_HOSTNAME=slippi-transmission
+      - TS_SERVE_PORT=${TRANSMISSION_INTERNAL_PORT?error}
+    tmpfs:
+      - /tmp
     networks:
       - transmission
-    environment:
-      - TZ=${TZ}
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TS_AUTHKEY=${TAILSCALE_AUTHKEY}
-      - LOCAL_PORT=${TRANSMISSION_INTERNAL_PORT}
-      - TS_STATE_DIR=${TAILSCALE_STATE_DIR}
-      - TS_HOSTNAME=slippi-transmission
-      - TS_USERSPACE=true
-      - TS_ACCEPT_DNS=false
-    volumes:
-      - ${TAILSCALE_STATE_DIR?error}
-    healthcheck:
-      test: ["CMD-SHELL", "tailscale status"]
-      interval: 1s
-      timeout: 5s
-      retries: 60
+    cap_drop:
+      - ALL
     cap_add:
-      - net_admin
-      - sys_module
-    restart: unless-stopped
+      - CHOWN
+      - SETGID
+      - SETUID
 

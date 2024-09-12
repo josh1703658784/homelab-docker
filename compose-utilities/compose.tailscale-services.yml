@@ -3,63 +3,51 @@
 services:
 
 
-  dsm-ts:
-    image: ghcr.io/josh1703658784/tailscale-serve-https:v1.72.1
+  dsm:
+    extends:
+      file: ./../common/services.yml
+      service: tailscale-proxy
     network_mode: host
     environment:
-      - TZ=${TZ}
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TS_AUTHKEY=${TAILSCALE_AUTHKEY}
-      - LOCAL_PORT=${DSM_EXTERNAL_PORT}
-      - TS_STATE_DIR=${TAILSCALE_STATE_DIR}
       - TS_HOSTNAME=dsm
-      - TS_USERSPACE=true
-      - TS_ACCEPT_DNS=true
-    volumes:
-      - ${TAILSCALE_STATE_DIR?error}
-    healthcheck:
-      test: ["CMD-SHELL", "tailscale status"]
-      interval: 1s
-      timeout: 5s
-      retries: 60
-    cap_add:
-      - net_admin
-      - sys_module
-    restart: unless-stopped
+      - TS_SERVE_PORT=${DSM_EXTERNAL_PORT?error}
 
+  # mostly for Harbour.app while on the go
+  portainer:
+    extends:
+      file: ./../common/services.yml
+      service: tailscale-proxy
+    networks:
+      - portainer
+    environment:
+      - TS_HOSTNAME=portainer
+      - TS_SERVE_PORT=${PORTAINER_PORT?error}
 
+  fake-data-generator:
+    extends:
+      file: ./../common/services.yml
+      service: tailscale-proxy
+    networks:
+      - fake-data-generator
+    environment:
+      - TS_HOSTNAME=fake-data-generator
+      - TS_SERVE_PORT=${FAKE_DATA_GENERATOR_PORT?error}
 
   # simple file server
-  fileserver-ts:
-    image: tailscale/tailscale:latest
+  fileserver:
+    extends:
+      file: ./../common/services.yml
+      service: tailscale-fileserver
     environment:
-      - TZ=${TZ}
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TS_AUTHKEY=${TAILSCALE_AUTHKEY}
       - TS_SERVE_CONFIG=/config/fileserver.json
-      - TS_STATE_DIR=${TAILSCALE_STATE_DIR}
       - TS_HOSTNAME=fileserver
-      - TS_USERSPACE=true
-      - TS_ACCEPT_DNS=true
     volumes:
-      - fileserver-ts:${TAILSCALE_STATE_DIR?error}
-      - ${TAILSCALE_SERVE_CONFIGS}:/config:ro
+      - ${TS_SERVE_CONFIGS?error}:/config:ro
       - /volume1/downloaded-media/data/media/movies:/downloads/movies:ro
       - /volume1/downloaded-media/data/media/books:/downloads/books:ro
       - /volume1/downloaded-media/data/media/tv:/downloads/tv:ro
       - /volume1/downloaded-media-slippi/transmission-downloads/complete:/downloads/slippi/music/downlods:ro
-    healthcheck:
-      test: ["CMD-SHELL", "tailscale status"]
-      interval: 1s
-      timeout: 5s
-      retries: 60
-    cap_add:
-      - net_admin
-      - sys_module
     networks:
-      - fileserver-ts
-    restart: unless-stopped
+      - fileserver
 
-
+#

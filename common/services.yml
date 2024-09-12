@@ -1,0 +1,48 @@
+services:
+
+  tailscale-proxy:
+    image: ghcr.io/josh1703658784/tailscale-serve-https:v1.72.1
+    environment:
+      - TZ=${TZ?error}
+      - PUID=${PUID?error}
+      - PGID=${PGID?error}
+      - TS_AUTHKEY=${TS_AUTHKEY?error}
+      - TS_STATE_DIR=${TS_STATE_DIR?error}
+      - TS_USERSPACE=true
+      - TS_ACCEPT_DNS=true
+      - TS_SERVE_MODE=${TS_SERVE_MODE?error}
+    volumes:
+      - ${TS_STATE_DIR?error}
+    healthcheck:
+      test: ["CMD-SHELL", "tailscale status"]
+      interval: 1s
+      timeout: 5s
+      retries: 60
+    cap_add:
+      - net_admin
+      - sys_module
+    restart: unless-stopped
+
+
+  # simple file server
+  tailscale-fileserver:
+    image: tailscale/tailscale:latest
+    environment:
+      - TZ=${TZ?error}
+      - PUID=${PUID?error}
+      - PGID=${PGID?error}
+      - TS_AUTHKEY=${TS_AUTHKEY?error}
+      - TS_STATE_DIR=${TS_STATE_DIR?error}
+      - TS_USERSPACE=true
+      - TS_ACCEPT_DNS=true
+    volumes:
+      - ${TS_STATE_DIR?error}
+    healthcheck:
+      test: ["CMD-SHELL", "tailscale status"]
+      interval: 1s
+      timeout: 5s
+      retries: 60
+    cap_add:
+      - net_admin
+      - sys_module
+    restart: unless-stopped

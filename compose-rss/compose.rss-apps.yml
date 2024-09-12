@@ -7,60 +7,50 @@
 services:
 
 
-  miniflux-ts:
-    image: tailscale/tailscale:latest
+  miniflux:
+    extends:
+      file: ./../common/services.yml
+      service: tailscale-proxy
     environment:
-      - TZ=${TZ}
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TS_AUTHKEY=${TAILSCALE_AUTHKEY}
-      - TS_STATE_DIR=${TAILSCALE_STATE_DIR}
-      - TS_USERSPACE=false
       - TS_HOSTNAME=miniflux
-      - TS_SERVE_CONFIG=/config/miniflux.json
-    volumes:
-      - miniflux-ts-state:${TAILSCALE_STATE_DIR?error}
-      - ${TAILSCALE_SERVE_CONFIGS}:/config:ro
-      - /dev/net/tun:/dev/net/tun:ro
-    healthcheck:
-      test: ["CMD-SHELL", "tailscale status"]
-      interval: 1s
-      timeout: 5s
-      retries: 60
-    cap_add:
-      - net_admin
-      - sys_module
+      - TS_SERVE_PORT=${MINIFLUX_PORT?error}
+    tmpfs:
+      - /tmp
     networks:
       - miniflux
-    restart: unless-stopped
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
 
-  miniflux:
+
+  miniflux-svc:
     image: miniflux/miniflux:latest
     healthcheck:
       test: ["CMD", "/usr/bin/miniflux", "-healthcheck", "auto"]
     depends_on:
       db:
         condition: service_healthy
-      # miniflux-ts:
-        # condition: service_healthy
-    network_mode: service:miniflux-ts
+    network_mode: service:miniflux
     environment:
-      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB}?sslmode=disable
+      - DATABASE_URL=postgres://${POSTGRES_USER?error}:${POSTGRES_PASSWORD?error}@db/${POSTGRES_DB?error}?sslmode=disable
       - RUN_MIGRATIONS=1
       - CREATE_ADMIN=1
-      - ADMIN_USERNAME=${MINIFLUX_USER}
-      - ADMIN_PASSWORD=${MINIFLUX_PASS}
+      - ADMIN_USERNAME=${MINIFLUX_USER?error}
+      - ADMIN_PASSWORD=${MINIFLUX_PASS?error}
 
   db:
     image: postgres:15
     networks:
       - miniflux
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER?error}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?error}
+      - POSTGRES_DB=${POSTGRES_DB?error}
     volumes:
-      - miniflux-db:/var/lib/postgresql/data
+      - ${MINIFLUX_DB_APP_DATA?error}:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "miniflux"]
       interval: 10s

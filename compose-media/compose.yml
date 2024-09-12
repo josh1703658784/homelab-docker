@@ -14,20 +14,7 @@ include:
       - ./.envrc
       - ./.secrets
 
-
 volumes:
-  tailscale-plex:
-  tailscale-minio:
-  tailscale-radarr:
-  tailscale-sonarr:
-  tailscale-bazarr:
-  tailscale-lidarr:
-  tailscale-readarr:
-  tailscale-prowlarr:
-  tailscale-overseerr:
-  tailscale-sabnzbd-vpn:
-  tailscale-qbittorrentvpn:
-
   qb-mam-session-cookie:
 
 networks:
@@ -40,4 +27,3 @@ networks:
   recyclarr:
   overseerr:
   qbittorrent:
-  lidarr-ts:

@@ -21,9 +21,9 @@ services:
     # command: python -m heisenbridge -c /data/heisenbridge.yaml --generate --listen-address heisenbridge
     # command: -c /data/heisenbridge.yaml --generate --listen-address heisenbridge
     # command: python -m heisenbridge -c /data/heisenbridge.yaml --listen-address 0.0.0.0 http://homeserver:8008
-    command: -c /data/heisenbridge.yaml --listen-address 0.0.0.0 http://matrix:${MATRIX_INTERNAL_PORT}
+    command: -c /data/heisenbridge.yaml --listen-address 0.0.0.0 http://matrix:${MATRIX_INTERNAL_PORT?error}
 
-  matrix:
+  matrix-svc:
     image: matrixdotorg/synapse:latest
     environment:
       - SYNAPSE_SERVER_NAME=${MATRIX_SERVER_NAME?error}
@@ -31,13 +31,14 @@ services:
       - UID=${PUID?error}
       - GID=${PGID?error}
       - TZ=${TZ?error}
-    ports:
-      - 127.0.0.1:${MATRIX_EXTERNAL_PORT}:${MATRIX_INTERNAL_PORT?error}     # bind to host loopback
+    # ports:
+      # - 127.0.0.1:${MATRIX_EXTERNAL_PORT?error}:${MATRIX_INTERNAL_PORT?error}     # bind to host loopback
     volumes:
       # - ./init/synapse-init.sh:/synapse-init.sh:ro
       - ${MATRIX_APP_DATA?error}/data:/data
-    networks:
-      - matrix
+    network_mode: service:matrix
+    # networks:
+      # - matrix
     # command: generate
     # entrypoint: /synapse-init.sh
 
@@ -48,7 +49,7 @@ services:
       SYNCV3_SECRET: ${SLIDING_SYNC_SECRET?error}
       SYNCV3_BINDADDR: :${SLIDING_SYNC_INTERNAL_PORT?error}
       # SYNCV3_DB: user=$(whoami) dbname=syncv3 sslmode=disable host=host.docker.internal password='${MAXTRIX_POSTGRES_PASSWORD?error}'
-      SYNCV3_DB: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD?error?error}@postgres:${POSTGRES_PORT}/syncv3?sslmode=disable"
+      SYNCV3_DB: "postgres://${POSTGRES_USER?error}:${POSTGRES_PASSWORD?error?error}@postgres:${POSTGRES_PORT?error}/syncv3?sslmode=disable"
     depends_on:
       - postgres
     networks:

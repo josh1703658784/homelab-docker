@@ -4,21 +4,17 @@
 
 services:
 
-  transmission:
+  transmission-svc:
     image: haugene/transmission-openvpn
     restart: unless-stopped
-    # networks:
-      # - transmission
-    network_mode: service:transmission-ts
-    depends_on:
-    - transmission-ts
+    network_mode: service:transmission
     cap_add:
       - NET_ADMIN
     volumes:
-      - ${TRANSMISSION_APP_DATA}/data:/data
-      - ${TRANSMISSION_APP_DATA}/config:/config
-      - ${TRANSMISSION_USER_DATA_DOWNLOADS}:/downloads
-      - ${TRANSMISSION_USER_DATA}/vpn-config:/etc/openvpn/custom/
+      - ${TRANSMISSION_APP_DATA?error}/data:/data
+      - ${TRANSMISSION_APP_DATA?error}/config:/config
+      - ${TRANSMISSION_USER_DATA_DOWNLOADS?error}:/downloads
+      - ${TRANSMISSION_USER_DATA?error}/vpn-config:/etc/openvpn/custom/
     # ipv6 must be disabled for airvpn to work
     sysctls:
       - "net.ipv6.conf.all.disable_ipv6=0"
@@ -27,14 +23,12 @@ services:
       - OPENVPN_CONFIG=AirVPN_US-LosAngeles_Groombridge_UDP-443-Entry3-7
       - OPENVPN_USERNAME=dummy
       - OPENVPN_PASSWORD=dummy
-      - TZ=${TZ}
-      - PUID=${PUID}
-      - PGID=${PGID}
+      - TZ=${TZ?error}
+      - PUID=${PUID?error}
+      - PGID=${PGID?error}
       - TRANSMISSION_DOWNLOAD_DIR="/downloads/complete"
       - TRANSMISSION_INCOMPLETE_DIR="/downloads/incomplete"
       - TRANSMISSION_INCOMPLETE_DIR_ENABLED="true"
-      - TRANSMISSION_PEER_PORT=${TRANSMISSION_LISTENING_PORT}
+      - TRANSMISSION_PEER_PORT=${TRANSMISSION_LISTENING_PORT?error}
       # - LOCAL_NETWORK=192.168.10.0/16 #,100.64.0.0/10
-    # ports:
-      # - 127.0.0.1:${TRANSMISSION_EXTERNAL_PORT}:${TRANSMISSION_INTERNAL_PORT}
 #
