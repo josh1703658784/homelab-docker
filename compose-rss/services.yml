@@ -1,0 +1,104 @@
+---
+
+# OFFICIAL: https://tailscale.dev/blog/docker-mod-tailscale
+# UNofficial: docker + tailscale: https://mrpowergamerbr.com/us/blog/2023-03-20-untangling-your-network-tailscale-in-docker-compose/
+
+
+services:
+
+
+  miniflux:
+    image: miniflux/miniflux:latest
+    healthcheck:
+      test: ["CMD", "/usr/bin/miniflux", "-healthcheck", "auto"]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - db
+      - miniflux-ts
+      - rsshub
+    restart: always
+    environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER?error}:${POSTGRES_PASSWORD?error}@db/${POSTGRES_DB?error}?sslmode=disable
+      - RUN_MIGRATIONS=1
+      - CREATE_ADMIN=1
+      - ADMIN_USERNAME=${MINIFLUX_USER?error}
+      - ADMIN_PASSWORD=${MINIFLUX_PASS?error}
+
+  db:
+    image: postgres:15
+    restart: always
+    networks:
+      - db
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER?error}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?error}
+      - POSTGRES_DB=${POSTGRES_DB?error}
+    volumes:
+      - ${MINIFLUX_DB_APP_DATA?error}:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "miniflux"]
+      interval: 10s
+
+
+  rsshub:
+    # two ways to enable puppeteer:
+    # * comment out marked lines, then use this image instead: diygod/rsshub:chromium-bundled
+    # * (consumes more disk space and memory) leave everything unchanged
+    # image: diygod/rsshub
+    image: diygod/rsshub:chromium-bundled
+    restart: always
+    # ports:
+        # - "1200:1200"
+    environment:
+      NODE_ENV: production
+      CACHE_TYPE: redis
+      REDIS_URL: "redis://redis:${REDIS_PORT?error}/"
+      # PUPPETEER_WS_ENDPOINT: "ws://browserless:${BROWSERLESS_PORT?error}" # marked
+    networks:
+      # browserless:
+      redis:
+      rsshub-ts:
+      rsshub:
+        aliases:
+            # a TLD is required by NetNewsWire
+            # and miniflux needs to access internally (not over tailscale)
+            - rsshub.internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${RSSHUB_PORT?error}/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      - redis
+      # - browserless # marked
+
+  # browserless: # marked
+  #   image: browserless/chrome # marked
+  #   restart: always # marked
+  #   networks:
+  #     - browserless
+  #   ulimits: # marked
+  #     core: # marked
+  #       hard: 0 # marked
+  #       soft: 0 # marked
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:${BROWSERLESS_PORT?error}/pressure"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+
+  redis:
+    image: redis:alpine
+    restart: always
+    networks:
+      - redis
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 5s

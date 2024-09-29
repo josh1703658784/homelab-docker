@@ -2,20 +2,45 @@
 
 # @TODO review these https://teddit.net/r/radarr/comments/hbwnb2/a_list_of_all_companion_tools_and_software/
 # @TODO https://github.com/TheUltimateC0der/Listrr
+# @TODO https://blog.gitguardian.com/how-to-improve-your-docker-containers-security-cheat-sheet/
+
 
 
 include:
-  - path: ./compose.media-apps.yml
+  - path: ./tailscale.yml
     env_file:
+      - ./../common/.envrc
+      - ./../common/.secrets
       - ./.envrc
       - ./.secrets
-  - path: ./compose.tailscale-services.yml
+
+  - path: ./services.yml
     env_file:
+      - ./../common/.envrc
+      - ./../common/.secrets
+      - ./.envrc
+      - ./.secrets
+
+  - path: ./configs.yml
+    env_file:
+      - ./../common/.envrc
+      - ./../common/.secrets
       - ./.envrc
       - ./.secrets
 
 volumes:
   qb-mam-session-cookie:
+  plex-ts:
+  radarr-ts:
+  sonarr-ts:
+  lidarr-ts:
+  readarr-ts:
+  prowlarr-ts:
+  bazarr-ts:
+  qb-ts:
+  sab-ts:
+  overseerr-ts:
+
 
 networks:
   plex:
@@ -27,3 +52,7 @@ networks:
   recyclarr:
   overseerr:
   qbittorrent:
+  radarr-ts:
+  sonarr-ts:
+  lidarr-ts:
+  plex-ts:

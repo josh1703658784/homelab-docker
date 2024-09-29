@@ -1,0 +1,195 @@
+
+configs:
+
+  plex-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://plex:${PLEX_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+  radarr-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://radarr:${RADARR_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+  sonarr-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://sonarr:${SONARR_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+
+  lidarr-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://lidarr:${LIDARR_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+
+  readarr-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://readarr:${READARR_PORT}?error"
+              }
+            }
+          }
+        }
+      }
+
+
+  prowlarr-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://prowlarr:${PROWLARR_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+  bazarr-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://bazarr:${BAZARR_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+  qb-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://qb:${QBITTORRENT_INTERNAL_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+  sab-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://sab:${SABNZBD_INTERNAL_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+  overseerr-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://overseerr:${OVERSEERR_PORT?error}"
+              }
+            }
+          }
+        }
+      }

@@ -48,8 +48,8 @@
 
 services:
 
-  # upon recreation, will need to add ALC tag 'apple-tv' to give apple-tv access
-  plex-svc:
+  # upon re-creation, will need to add ALC tag 'apple-tv' to give apple-tv access
+  plex:
     image: lscr.io/linuxserver/plex:latest
     restart: unless-stopped
     environment:
@@ -65,20 +65,23 @@ services:
       - ${MEDIA_DIRPATH?error}/media/movies:/movies:ro
     tmpfs:
       - /tmp
-    network_mode: service:plex
+    network_mode: service:plex-ts
+    # networks:
+      # - plex-ts
     cap_drop:
       - ALL
+    # profiles: [live]       # plex should always be handled with care for other users
     cap_add:
       - CHOWN
       - SETGID
       - SETUID
       - FOWNER                                              # "... Permission denied (/var/lib/apt ..." and others
       - DAC_OVERRIDE
+#
 
 
 
-
-  radarr-svc:
+  radarr:
     image: lscr.io/linuxserver/radarr:latest
     restart: unless-stopped
     environment:
@@ -86,10 +89,19 @@ services:
       - PGID=${PGID?error}
       - PUID=${PUID?error}
     volumes:
-      - ${MEDIA_DIRPATH?error}:/data                              # mount top-level dir to support hardlinks and atomic moves
-                                                            # /data/media/movies; /data/torrents/movies; /data/usenet/movies;
+      # mount top-level dir to support hardlinks and atomic moves
+      # /data/media/movies; /data/torrents/movies; /data/usenet/movies;
+      - ${MEDIA_DIRPATH?error}:/data
       - ${RADARR_APP_DATA?error}/config:/config
-    network_mode: service:radarr
+    networks:
+      - radarr-ts
+      - bazarr
+      - doplarr
+      - sabnzbd
+      - prowlarr
+      - overseerr
+      - recyclarr
+      - qbittorrent
     # cap_drop:
       # - ALL
     cap_add:
@@ -98,7 +110,7 @@ services:
       - SETUID
 
 
-  sonarr-svc:
+  sonarr:
     image: lscr.io/linuxserver/sonarr:latest
     restart: unless-stopped
     environment:
@@ -106,17 +118,26 @@ services:
       - PUID=${PUID?error}
       - PGID=${PGID?error}
     volumes:
-      - ${MEDIA_DIRPATH?error}:/data                              # mount top-level dir to support hardlinks and atomic moves
-                                                            # /data/media/tv; /data/torrents/tv; /data/usenet/tv;
+      # mount top-level dir to support hardlinks and atomic moves
+      # /data/media/tv; /data/torrents/tv; /data/usenet/tv;
+      - ${MEDIA_DIRPATH?error}:/data
       - ${SONARR_APP_DATA?error}/config:/config
-    network_mode: service:sonarr
+    networks:
+      - sonarr-ts
+      - bazarr
+      - sabnzbd
+      - doplarr
+      - prowlarr
+      - overseerr
+      - recyclarr
+      - qbittorrent
     cap_add:
       - CHOWN
       - SETGID
       - SETUID
 
 
-  lidarr-svc:
+  lidarr:
     image: lscr.io/linuxserver/lidarr:latest
     restart: unless-stopped
     environment:
@@ -124,10 +145,15 @@ services:
       - PUID=${PUID?error}
       - PGID=${PGID?error}
     volumes:
-      - ${MEDIA_DIRPATH?error}:/data                              # mount top-level dir to support hardlinks and atomic moves
-                                                            # /data/media/music; /data/torrents/music; /data/usenet/music;
+      # mount top-level dir to support hardlinks and atomic moves
+      # /data/media/music; /data/torrents/music; /data/usenet/music;
+      - ${MEDIA_DIRPATH?error}:/data
       - ${LIDARR_APP_DATA?error}/config:/config
-    network_mode: service:lidarr
+    networks:
+      - lidarr-ts
+      - sabnzbd
+      - prowlarr
+      - qbittorrent
     tmpfs:
       - /tmp
     cap_add:
@@ -135,7 +161,7 @@ services:
       - SETGID
       - SETUID
 
-  readarr-svc:
+  readarr:
     image: lscr.io/linuxserver/readarr:develop
     restart: unless-stopped
     environment:
@@ -145,13 +171,13 @@ services:
     volumes:
       - ${READARR_APP_DATA?error}/config:/config
       - ${MEDIA_DIRPATH?error}:/data                              # mount top-level dir to support hardlinks and atomic moves
-    network_mode: service:readarr
+    network_mode: service:readarr-ts
     tmpfs:
       - /tmp
 
 
 
-  prowlarr-svc:
+  prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
     restart: unless-stopped
     environment:
@@ -162,14 +188,14 @@ services:
       - ${PROWLARR_APP_DATA?error}/config:/config
     tmpfs:
       - /tmp
-    network_mode: service:prowlarr
+    network_mode: service:prowlarr-ts
     cap_add:
       - CHOWN
       - SETGID
       - SETUID
 
 
-  bazarrr-svc:
+  bazarr:
     image: lscr.io/linuxserver/bazarr:latest
     restart: unless-stopped
     environment:
@@ -180,19 +206,22 @@ services:
       - ${MEDIA_DIRPATH?error}:/data                              # mount top-level dir to support hardlinks and atomic moves
                                                             # /data/media/movies; /data/media/tv;
       - ${BAZARR_APP_DATA?error}/config:/config
-      # - tailscale-bazarr:${TAILSCALE_STATE_DIR?error}
     tmpfs:
       - /tmp
-    network_mode: service:bazarr
+    network_mode: service:bazarr-ts
     cap_drop:
       - ALL
     cap_add:
       - CHOWN
       - SETGID
       - SETUID
+    # bazarr acting up; synology kernel doesn't support proper cpu constraints :(
+    # https://docs.docker.com/reference/compose-file/services/#cpuset
+    # only run on cpu 0
+    cpuset: '0'
 
 
-  qb-svc:
+  qb:
     image: binhex/arch-qbittorrentvpn:latest
     restart: unless-stopped
     environment:
@@ -218,7 +247,7 @@ services:
       - qb-mam-session-cookie:/mam-session-cookie
     tmpfs:
       - /tmp
-    network_mode: service:qb
+    network_mode: service:qb-ts
     # networks:
       # - qbittorrent
     # ports:                                                                    # https://docs.docker.com/network/#published-ports
@@ -235,7 +264,7 @@ services:
 
 
 
-  sab-svc:
+  sab:
     image: binhex/arch-sabnzbdvpn:latest
     restart: unless-stopped
     environment:
@@ -256,7 +285,7 @@ services:
       - ${SABNZBD_APP_DATA?error}/automated-configs-backup:/automated-configs-backup
     tmpfs:
       - /tmp
-    network_mode: service:sab
+    network_mode: service:sab-ts
     # networks:
       # - sabnzbd
     # ports:
@@ -285,7 +314,7 @@ services:
       - ${MEDIA_DIRPATH?error}:/data                              # mount top-level dir to support hardlinks and atomic moves
 
 
-  overseerr-svc:
+  overseerr:
     image: lscr.io/linuxserver/overseerr:latest
     restart: unless-stopped
     environment:
@@ -294,7 +323,7 @@ services:
       - PGID=${PGID?error}
     volumes:
       - ${OVERSEERR_APP_DATA?error}/config:/config
-    network_mode: service:overseerr
+    network_mode: service:overseerr-ts
     cap_add:
       - CHOWN
       - SETGID

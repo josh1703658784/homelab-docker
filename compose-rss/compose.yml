@@ -4,12 +4,39 @@
 # @TODO https://github.com/TheUltimateC0der/Listrr
 
 
+
 include:
-  - path: ./compose.rss-apps.yml
+  - path: ./services.yml
     env_file:
+      - ./../common/.envrc
+      - ./../common/.secrets
       - ./.envrc
       - ./.secrets
 
 
+  - path: ./tailscale.yml
+    env_file:
+      - ./../common/.envrc
+      - ./../common/.secrets
+      - ./.envrc
+      - ./.secrets
+
+  - path: ./configs.yml
+    env_file:
+      - ./../common/.envrc
+      - ./../common/.secrets
+      - ./.envrc
+      - ./.secrets
+
 networks:
-  miniflux:
+  db:
+  miniflux-ts:
+  rsshub-ts:
+  browserless:
+  redis:
+  rsshub:
+
+volumes:
+  miniflux-ts:
+  redis-data:
+  rsshub-ts:

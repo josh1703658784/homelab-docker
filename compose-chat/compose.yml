@@ -3,17 +3,32 @@
 name: chat
 
 include:
-  - path: ./compose.chat-apps.yml
+  - path: ./services.yml
     env_file:
+      - ./../common/.envrc
+      - ./../common/.secrets
       - ./.envrc
       - ./.secrets
-  - path: ./compose.tailscale-services.yml
+  - path: ./tailscale.yml
     env_file:
+      - ./../common/.envrc
+      - ./../common/.secrets
+      - ./.envrc
+      - ./.secrets
+
+  - path: ./configs.yml
+    env_file:
+      - ./../common/.envrc
+      - ./../common/.secrets
       - ./.envrc
       - ./.secrets
 
 volumes:
   postgres-data:
+  matrix-ts:
 
 networks:
   matrix:
+  sliding-sync:
+  discord:
+  heisenbridge:

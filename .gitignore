@@ -1,6 +1,7 @@
 *.swp
 *.conf
 *.secrets
+*.secret
 *.no_commit
 
 .nova

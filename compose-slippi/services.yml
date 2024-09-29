@@ -3,21 +3,22 @@
 # @TODO https://github.com/TheUltimateC0der/Listrr
 
 services:
+#
 
-  transmission-svc:
+  transmission:
     image: haugene/transmission-openvpn
     restart: unless-stopped
-    network_mode: service:transmission
+    networks:
+      - transmission-ts
     cap_add:
       - NET_ADMIN
     volumes:
       - ${TRANSMISSION_APP_DATA?error}/data:/data
       - ${TRANSMISSION_APP_DATA?error}/config:/config
-      - ${TRANSMISSION_USER_DATA_DOWNLOADS?error}:/downloads
+      - ${TRANSMISSION_DOWNLOADS?error}:/downloads
       - ${TRANSMISSION_USER_DATA?error}/vpn-config:/etc/openvpn/custom/
-    # ipv6 must be disabled for airvpn to work
     sysctls:
-      - "net.ipv6.conf.all.disable_ipv6=0"
+      - "net.ipv6.conf.all.disable_ipv6=0" # ipv6 must be disabled for airvpn to work
     environment:
       - OPENVPN_PROVIDER=custom
       - OPENVPN_CONFIG=AirVPN_US-LosAngeles_Groombridge_UDP-443-Entry3-7
