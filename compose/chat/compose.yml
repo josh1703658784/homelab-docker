@@ -1,0 +1,39 @@
+---
+
+name: chat
+
+include:
+  - path: ./services.yml
+    env_file:
+      - ./../common/.envrc
+      - ./../common/.secrets
+      - ./.envrc
+      - ./.secrets
+  - path: ./tailscale.yml
+    env_file:
+      - ./../common/.envrc
+      - ./../common/.secrets
+      - ./.envrc
+      - ./.secrets
+
+  - path: ./configs.yml
+    env_file:
+      - ./../common/.envrc
+      - ./../common/.secrets
+      - ./.envrc
+      - ./.secrets
+
+volumes:
+  postgres-data:
+  matrix-ts:
+  conduit-db:
+  conduit-ts:
+  heisenbridge-appservice:
+  discord-sqlite:
+
+networks:
+  matrix:
+  sliding-sync:
+  discord:
+  heisenbridge:
+  conduit-ts:

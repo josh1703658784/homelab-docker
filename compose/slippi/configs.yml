@@ -1,0 +1,59 @@
+configs:
+  transmission-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://transmission-vpn:${TRANSMISSION_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+  webdav-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://webdav:80"
+              }
+            }
+          }
+        }
+      }
+
+
+
+  filestation-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "https+insecure://host.docker.internal:${FILESTATION_PORT?error}"
+              }
+            }
+          }
+        }
+      }

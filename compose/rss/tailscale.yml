@@ -1,0 +1,41 @@
+
+services:
+
+
+  miniflux-ts:
+    extends:
+      file: ./../common/services.yml
+      service: tailscale
+    hostname: miniflux
+    environment:
+      - TS_SERVE_CONFIG=/miniflux-ts
+      - TS_HOSTNAME=rss
+    volumes:
+      - miniflux-ts:${TS_STATE_DIR?error}
+    tmpfs:
+      - /tmp
+    configs:
+      - miniflux-ts
+    networks:
+      - db
+      - miniflux-ts
+      - rsshub
+    dns: 100.100.100.100
+
+
+  rsshub-ts:
+      extends:
+        file: ./../common/services.yml
+        service: tailscale
+      environment:
+        - TS_SERVE_CONFIG=/rsshub-ts
+        - TS_HOSTNAME=rsshub
+      volumes:
+        - rsshub-ts:${TS_STATE_DIR?error}
+      tmpfs:
+        - /tmp
+      networks:
+        - rsshub-ts
+      configs:
+        - rsshub-ts
+

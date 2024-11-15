@@ -1,0 +1,162 @@
+---
+
+services:
+
+
+  change-detection-ts:
+    extends:
+      file: ./../common/services.yml
+      service: tailscale
+    # hostname: change-detection
+    networks:
+      - change-detection-ts
+    volumes:
+      - change-detection-ts:${TS_STATE_DIR?error}
+    configs:
+      - change-detection-ts
+    environment:
+      - TS_SERVE_CONFIG=/change-detection-ts
+      - TS_HOSTNAME=change-detection
+
+
+
+#   watchtower-ts:
+#     extends:
+#       file: ./../common/services.yml
+#       service: tailscale
+#     hostname: watchtower
+#     networks:
+#       - watchtower
+#     volumes:
+#       - watchtower-ts:${TS_STATE_DIR?error}
+#     configs:
+#       - watchtower-ts
+#     environment:
+#       - TS_SERVE_CONFIG=/watchtower-ts
+#       - TS_HOSTNAME=watchtower
+#
+#
+#
+#   apprise-ts:
+#     extends:
+#       file: ./../common/services.yml
+#       service: tailscale
+#     hostname: apprise
+#     networks:
+#       - apprise
+#     volumes:
+#       - apprise-ts:${TS_STATE_DIR?error}
+#     configs:
+#       - apprise-ts
+#     environment:
+#       - TS_SERVE_CONFIG=/apprise-ts
+#       - TS_HOSTNAME=apprise
+#     dns: 100.100.100.100
+
+
+
+  dsm-ts:
+    extends:
+      file: ./../common/services.yml
+      service: tailscale
+    networks:
+      - dsm
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - dsm-ts:${TS_STATE_DIR?error}
+    configs:
+      - dsm-ts
+    environment:
+      - TS_SERVE_CONFIG=/dsm-ts
+      - TS_HOSTNAME=dsm
+
+  uptime-kuma-ts:
+    extends:
+      file: ./../common/services.yml
+      service: tailscale
+    networks:
+      - uptime-kuma-ts
+    volumes:
+      - uptime-kuma-ts:${TS_STATE_DIR?error}
+    configs:
+      - uptime-kuma-ts
+    environment:
+      - TS_SERVE_CONFIG=/uptime-kuma-ts
+      - TS_HOSTNAME=uptime-kuma
+
+
+  # mostly for Harbour.app while on the go
+  portainer-ts:
+    extends:
+      file: ./../common/services.yml
+      service: tailscale
+    networks:
+      - portainer-ts
+      # - socket-proxy
+    volumes:
+      - portainer-ts:${TS_STATE_DIR?error}
+    depends_on:
+      - portainer
+    environment:
+      - TS_SERVE_CONFIG=/portainer-ts
+      - TS_HOSTNAME=portainer
+    configs:
+      - portainer-ts
+
+  fake-data-generator-ts:
+    extends:
+      file: ./../common/services.yml
+      service: tailscale
+    networks:
+      - fake-data-generator
+    volumes:
+      - fake-data-generator-ts:${TS_STATE_DIR?error}
+    environment:
+      - TS_HOSTNAME=fake-data-generator
+      - TS_SERVE_CONFIG=/fake-data-generator-ts
+    configs:
+      - fake-data-generator-ts
+
+  # # simple file server
+  # fileserver-ts:
+  #   extends:
+  #     file: ./../common/services.yml
+  #     service: tailscale
+  #   environment:
+  #     - TS_SERVE_CONFIG=/fileserver-ts
+  #     - TS_EXTRA_ARGS=--advertise-tags=tag:kacey,tag:slippi,tag:service,tag:container
+  #     - TS_HOSTNAME=fileserver
+  #   volumes:
+  #     - fileserver-ts:${TS_STATE_DIR?error}
+  #     - ${DOWNLOADED_MEDIA?error}/data/media/movies:/downloads/movies:ro
+  #     - ${DOWNLOADED_MEDIA?error}/data/media/books:/downloads/books:ro
+  #     - ${DOWNLOADED_MEDIA?error}/data/media/tv:/downloads/tv:ro
+  #     - ${DOWNLOADED_MEDIA?error}/slippi-data/services/transmission/complete:/downloads/slippi/music/downlods:ro
+  #   networks:
+  #     - fileserver
+  #   configs:
+  #     - fileserver-ts
+
+  # # simple file server
+  # webdav-ts:
+  #   extends:
+  #     file: ./../common/services.yml
+  #     service: tailscale-drive
+  #   environment:
+  #     - TS_SHARE_NAME=FOO
+  #     - TS_SHARE_PATH=/tmp
+  #     # - TS_SERVE_PORT=8080
+  #     # - TS_SERVE_MODE=https
+  #     # - TS_SERVE_CONFIG=/webdav-ts
+  #     # - TS_EXTRA_ARGS=--advertise-tags=tag:kacey,tag:slippi,tag:service,tag:container
+  #     - TS_HOSTNAME=webdav
+  #   volumes:
+  #     - webdav-ts:${TS_STATE_DIR?error}
+  #   networks:
+  #     - webdav
+    # entrypoint: tail -f /dev/null
+    # CMD: tailscale drive share FOO /tmp
+    # configs:
+      # - webdav-ts
+

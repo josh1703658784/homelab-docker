@@ -1,0 +1,79 @@
+---
+
+# OFFICIAL: https://tailscale.dev/blog/docker-mod-tailscale
+# UNofficial: docker + tailscale: https://mrpowergamerbr.com/us/blog/2023-03-20-untangling-your-network-tailscale-in-docker-compose/
+
+#@TODO  https://mszpro.com/blog/matrix-sliding-sync/
+
+
+services:
+
+  hb:
+    image: hif1/heisenbridge:latest
+    hostname: heisenbridge
+    configs:
+      - source: heisenbridge.yaml
+        mode: 0555
+    networks:
+      - heisenbridge
+    entrypoint: python -m heisenbridge --config /heisenbridge.yaml --listen-address=0.0.0.0 --listen-port=9898 http://conduit:6167
+
+
+  # conduit.RS
+  conduit:
+    image: matrixconduit/matrix-conduit:latest
+    restart: unless-stopped
+    networks:
+      - conduit-ts
+      - heisenbridge
+      - discord
+    volumes:
+        - conduit-db:/var/lib/matrix-conduit/
+    environment:
+        CONDUIT_SERVER_NAME: conduit.stonecat-shark.ts.net # EDIT THIS
+        CONDUIT_DATABASE_PATH: /var/lib/matrix-conduit/
+        CONDUIT_DATABASE_BACKEND: rocksdb
+        CONDUIT_PORT: ${CONDUIT_PORT}
+        CONDUIT_MAX_REQUEST_SIZE: 20000000 # in bytes, ~20 MB
+        CONDUIT_ALLOW_REGISTRATION: 'true'
+        CONDUIT_ALLOW_FEDERATION: 'true'
+        CONDUIT_ALLOW_CHECK_FOR_UPDATES: 'true'
+        CONDUIT_TRUSTED_SERVERS: '["matrix.org"]'
+        #CONDUIT_MAX_CONCURRENT_REQUESTS: 100
+        CONDUIT_ADDRESS: 0.0.0.0
+        CONDUIT_CONFIG: '' # Ignore this
+
+
+  # discord:
+  #   image: dock.mau.dev/mautrix/discord:latest
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ${DISCORD_BRIDGE_APP_DATA}:/data
+  #     - discord-sqlite:/discord-sqlite.db
+  #   networks:
+  #     - discord
+  #   # entrypoint: tail -f /dev/null
+
+
+    # If you put the service above in the same docker-compose as the homeserver,
+    # ignore the parts below. Otherwise, see below for configuring networking.
+
+    # If synapse is running outside of docker, you'll need to expose the port.
+    # Note that in most cases you should either run everything inside docker
+    # or everything outside docker, rather than mixing docker things with
+    # non-docker things.
+    #ports:
+    #- "29334:29334"
+    # You'll also probably want this so the bridge can reach Synapse directly
+    # using something like `http://host.docker.internal:8008` as the address:
+    #extra_hosts:
+    #- "host.docker.internal:host-gateway"
+
+    # If synapse is in a different network, then add this container to that network.
+    #networks:
+    #- synapsenet
+# This is also a part of the networks thing above
+#networks:
+#  synapsenet:
+#    external:
+#      name: synapsenet

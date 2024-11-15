@@ -1,8 +1,8 @@
 *.swp
 *.conf
-*.secrets
-*.secret
-*.no_commit
+**/*secrets*
+**/*secret*
+**/*no_commit*
 
 .nova
 .DS_Store

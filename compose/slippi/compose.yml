@@ -1,0 +1,40 @@
+---
+# @TODO review these https://teddit.net/r/radarr/comments/hbwnb2/a_list_of_all_companion_tools_and_software/
+# @TODO https://github.com/TheUltimateC0der/Listrr
+
+# name: compose-slippi #@TODO remove and recreate all services
+
+include:
+
+  - path: ./secrets.yml
+
+  - path: ./services.yml
+    env_file:
+      - ./../common/.envrc
+      - ./../common/.secrets
+      - ./.envrc
+      - ./.secrets
+  - path: tailscale.yml
+    env_file:
+      - ../common/.envrc
+      - ../common/.secrets
+      - .envrc
+      - .secrets
+  - path: configs.yml
+    env_file:
+      - ../common/.envrc
+      - ../common/.secrets
+      - .envrc
+      - .secrets
+
+volumes:
+  transmission-ts:
+  webdav-ts:
+  filestation-ts:
+
+networks:
+  transmission-ts:
+  webdav-ts:
+  webdav-internal:
+    internal: true
+  filestation-ts:

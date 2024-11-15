@@ -1,0 +1,57 @@
+---
+# @TODO review these https://teddit.net/r/radarr/comments/hbwnb2/a_list_of_all_companion_tools_and_software/
+# @TODO https://github.com/TheUltimateC0der/Listrr
+
+services:
+
+  # transmission-ts:
+  #   extends:
+  #     file: ./../common/services.yml
+  #     service: tailscale
+  #   environment:
+  #     - TS_SERVE_CONFIG=/transmission-ts
+  #     - TS_HOSTNAME=transmission
+  #     - TS_EXTRA_ARGS=--advertise-tags=tag:slippi,tag:service,tag:container
+  #   volumes:
+  #     - transmission-ts:${TS_STATE_DIR?error}
+  #   tmpfs:
+  #     - /tmp
+  #   networks:
+  #     - transmission-ts
+  #   configs:
+  #     - transmission-ts
+
+  # webdav-ts:
+  #   extends:
+  #     file: ./../common/services.yml
+  #     service: tailscale
+  #   networks:
+  #     - webdav-ts
+  #     - webdav-internal
+  #   volumes:
+  #     - webdav-ts:${TS_STATE_DIR?error}
+  #   configs:
+  #     - webdav-ts
+  #   environment:
+  #     - TS_SERVE_CONFIG=/webdav-ts
+  #     - TS_HOSTNAME=slippi-disk
+  #     - TS_EXTRA_ARGS=--advertise-tags=tag:slippi
+
+  filestation-ts:
+    extends:
+      file: ./../common/services.yml
+      service: tailscale
+    networks:
+      - filestation-ts
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - filestation-ts:${TS_STATE_DIR?error}
+    configs:
+      - filestation-ts
+    environment:
+      - TS_SERVE_CONFIG=/filestation-ts
+      - TS_HOSTNAME=slippi-disk
+      - TS_EXTRA_ARGS=--advertise-tags=tag:slippi,tag:service,tag:container
+
+

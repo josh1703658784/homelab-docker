@@ -1,0 +1,31 @@
+---
+# @TODO review these https://teddit.net/r/radarr/comments/hbwnb2/a_list_of_all_companion_tools_and_software/
+# @TODO https://github.com/TheUltimateC0der/Listrr
+
+services:
+
+
+  transmission:
+    extends:
+      file: ./../common/services.yml
+      service: lsio
+    image: lscr.io/linuxserver/transmission:latest
+    read_only: true
+    healthcheck:
+      test: curl --silent 'https://ipleak.net/json/' | grep -q 'AirVPN'
+    labels:
+      - autoheal=true
+    network_mode: "container:compose-media-gluetun-1"
+    tmpfs:
+      - /data/watch
+      - /watch
+      - /transmissionic
+      - /combustion-release
+      - /flood-for-transmission
+      - /kettu
+      - /transmission-web-control
+      - /run:exec
+    volumes:
+      - ${TRANSMISSION_APP_DATA?error}/config:/config
+      - ${TRANSMISSION_DOWNLOADS?error}:/downloads
+      - ${TRANSMISSION_UPLOADS?error}:/uploads:ro

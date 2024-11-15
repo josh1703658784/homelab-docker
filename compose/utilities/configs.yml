@@ -1,0 +1,195 @@
+
+configs:
+
+  # srm-ts:
+  #   content: |
+  #     {
+  #       "TCP": {
+  #         "443": {
+  #           "HTTPS": true
+  #         }
+  #       },
+  #       "Web": {
+  #         "$${TS_CERT_DOMAIN}:443": {
+  #           "Handlers": {
+  #             "/": {
+  #               "Proxy": "http://192.168.10.1:8000"
+  #             }
+  #           }
+  #         }
+  #       }
+  #     }
+
+  watchtower-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://localhost:${APPRISE_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+  apprise-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://localhost:${APPRISE_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+
+  dsm-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://host.docker.internal:${DSM_EXTERNAL_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+
+  uptime-kuma-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://uptime-kuma:${UPTIME_KUMA_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+  change-detection-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://change-detection:${CHANGE_DETECTION_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+  portainer-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://portainer:${PORTAINER_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+  fileserver-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Path": "/downloads"
+              }
+            }
+          }
+        }
+      }
+
+  fake-data-generator-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://fake-data-generator:${FAKE_DATA_GENERATOR_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+
+  adguard-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://adguard:443"
+              }
+            }
+          }
+        }
+      }

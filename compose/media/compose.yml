@@ -1,0 +1,84 @@
+---
+
+# @TODO review these https://teddit.net/r/radarr/comments/hbwnb2/a_list_of_all_companion_tools_and_software/
+# @TODO https://github.com/TheUltimateC0der/Listrr
+# @TODO https://blog.gitguardian.com/how-to-improve-your-docker-containers-security-cheat-sheet/
+
+
+name: compose-media #@TODO remove and recreate all services
+
+include:
+
+  - path: ./secrets.yml
+
+  - path: ./tailscale.yml
+    env_file:
+      - ./../common/.envrc
+      - ./../common/.secrets
+      - ./.envrc
+      - ./.secrets
+
+  - path: ./services.yml
+    env_file:
+      - ./../common/.envrc
+      - ./../common/.secrets
+      - ./.envrc
+      - ./.secrets
+
+  - path: ./configs.yml
+    env_file:
+      - ./../common/.envrc
+      - ./../common/.secrets
+      - ./.envrc
+      - ./.secrets
+
+volumes:
+  bazarr-ts:
+  calibre-ts:
+  calibre-web-ts:
+  lidarr-ts:
+  overseerr-ts:
+  plex-ts:
+  prowlarr-ts:
+  qb-mam-session-cookie:
+  qbittorrent-mam-session-cookie:
+  qbittorrent-ts:
+  radarr-ts:
+  readarr-ts:
+  sab-ts:
+  sonarr-ts:
+  gluetun:
+  nzbget-ts:
+  transmission-ts:
+
+
+networks:
+  bazarr-ts:
+  bazarr:
+  calibre-ts:
+  calibre-web-ts:
+  calibre:
+  calibre-web:
+    # internal: true
+  doplarr:
+  lidarr-ts:
+  minio:
+  overseerr-ts:
+  overseerr:
+  plex-ts:
+  plex:
+  prowlarr-ts:
+  prowlarr:
+  qbittorrent-ts:
+  qbittorrent:
+  radarr-ts:
+  readarr-ts:
+  readarr:
+  recyclarr:
+  sab-ts:
+  sabnzbd:
+  sonarr-ts:
+  unpackerr:
+    internal: true
+  nzbget-ts:
+  transmission-ts:

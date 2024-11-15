@@ -1,0 +1,283 @@
+
+configs:
+
+
+  transmission-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://gluetun:${TRANSMISSION_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+  nzbget-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://gluetun:${NZBGET_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+  plex-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "https+insecure://plex:${PLEX_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+  radarr-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://localhost:${RADARR_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+  sonarr-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://sonarr:${SONARR_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+
+  lidarr-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://lidarr:${LIDARR_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+
+  readarr-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://readarr:${READARR_PORT}?error"
+              }
+            }
+          }
+        }
+      }
+
+
+  calibre-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          },
+          "8443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://calibre:${CALIBRE_DESKTOP_PORT?error}"
+              }
+            }
+          },
+          "$${TS_CERT_DOMAIN}:8443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://calibre:${CALIBRE_WEBSERVER_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+
+  calibre-web-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://cw:${CALIBRE_WEB_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+  prowlarr-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://prowlarr:${PROWLARR_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+  bazarr-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://bazarr:${BAZARR_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+  qbittorrent-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://gluetun:${QBITTORRENT_INTERNAL_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+  sab-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://sab:${SABNZBD_INTERNAL_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+  overseerr-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://overseerr:${OVERSEERR_PORT?error}"
+              }
+            }
+          }
+        }
+      }

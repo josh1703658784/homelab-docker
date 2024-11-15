@@ -1,0 +1,451 @@
+---
+
+# OFFICIAL: https://tailscale.dev/blog/docker-mod-tailscale
+# UNofficial: docker + tailscale: https://mrpowergamerbr.com/us/blog/2023-03-20-untangling-your-network-tailscale-in-docker-compose/
+
+# TRASH GUIDES: https://trash-guides.info
+# TG / RECYCLARR: https://recyclarr.dev/wiki/
+
+# DEFUALT CAPABILITIES
+# - KILL
+# - CHOWN
+# - MKNOD
+# - SETGID
+# - SETUID
+# - FSETID
+# - FOWNER
+# - NET_RAW
+# - SETFCAP
+# - SETPCAP
+# - SYS_CHROOT
+# - AUDIT_WRITE
+# - DAC_OVERRIDE
+# - NET_BIND_SERVICE
+
+
+# mitigate top-level dir mounting to support hardlinks
+# - /data/media/tv                                      # . mitigate top-level dir mounting
+# - /data/media/music                                   # .
+# - /data/media/movies                                  # .
+#                                                       # .
+# - /data/torrents/tv                                   # .
+# - /data/torrents/music                                # .
+# - /data/torrents/movies                               # .
+# - /data/torrents/incomplete                           # .
+#                                                       # .
+# - /data/usenet/incomplete                             # .
+# - /data/usenet/complete/tv                            # .
+# - /data/usenet/complete/music                         # .
+# - /data/usenet/complete/movies                        # /
+
+
+# add secrets: https://docs.docker.com/compose/use-secrets/
+# add configs: https://docs.docker.com/reference/compose-file/configs/
+
+# tmpfs volume permissions syntax: https://github.com/docker/cli/issues/698#issuecomment-429688027
+
+# https://projectatomic.io/blog/2015/12/making-docker-images-write-only-in-production/
+
+services:
+
+  gluetun:
+    extends:
+      file: ./../common/services.yml
+      service: defaults
+    image: qmcgaw/gluetun
+    restart: always
+    read_only: false
+    cap_add:
+      - NET_ADMIN
+      - CHOWN
+      - MKNOD
+      - NET_RAW
+      - DAC_OVERRIDE
+      - NET_BIND_SERVICE
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
+    labels:
+      - autoheal=true
+    networks:
+      qbittorrent-ts:
+        aliases:
+          - qb
+      nzbget-ts:
+        aliases:
+          - nzbget
+      transmission-ts:
+        aliases:
+          - transmission
+    volumes:
+      - gluetun:/gluetun
+    expose:
+      - 8888      # HTTP proxy
+      - 8388/tcp  # Shadowsocks
+      - 8388/udp  # Shadowsocks
+      - 8080      # qBittorrent
+      - 6789      # nzbget
+      - 9091      # transmission-slippi
+    environment:
+      # See https://github.com/qdm12/gluetun-wiki/tree/main/setup#setup
+      - VPN_SERVICE_PROVIDER=${GLUETUN_VPN_SERVICE_PROVIDER?error}
+      - SERVER_COUNTRIES=${GLUETUN_SERVER_COUNTRIES?error}
+      - WIREGUARD_PRIVATE_KEY=${GLUETUN_WIREGUARD_PRIVATE_KEY?error}
+      - WIREGUARD_PRESHARED_KEY=${GLUETUN_WIREGUARD_PRESHARED_KEY?error}
+      - WIREGUARD_ADDRESSES=${GLUETUN_WIREGUARD_ADDRESSES?error}
+      - VPN_TYPE=wireguard
+      - WIREGUARD_IMPLEMENTATION=userspace
+      - DOT=on
+      - DOT_IPV6=off
+      - DOT_PROVIDERS=quad9
+      - FIREWALL_VPN_INPUT_PORTS=${QBITTORRENT_TORRENTING_PORT}
+      # - FIREWALL_INPUT_PORTS=${QBITTORRENT_TORRENTING_PORT}
+      - FIREWALL_DEBUG=on
+
+  nzb:
+    extends:
+      file: ./../common/services.yml
+      service: lsio
+    image: lscr.io/linuxserver/nzbget:latest
+    healthcheck:
+      test: curl --silent 'https://ipleak.net/json/' | grep -q 'AirVPN'
+    cap_add:
+      - FOWNER
+    labels:
+      - autoheal=true
+    environment:
+      - TZ=${TZ?error}
+      - PGID=${PGID?error}
+      - PUID=${PUID?error}
+    volumes:
+      - /app/nzbget
+      - ${NZBGET_APP_DATA}/config:/config
+      - ${MEDIA_DIRPATH?error}/usenet:/data/usenet:ro
+    network_mode: service:gluetun
+
+  qb:
+    extends:
+      file: ./../common/services.yml
+      service: lsio
+    image: lscr.io/linuxserver/qbittorrent:latest
+    labels:
+      - autoheal=true
+    environment:
+      - WEBUI_PORT=${QBITTORRENT_INTERNAL_PORT?error}
+      - TORRENTING_PORT=${QBITTORRENT_TORRENTING_PORT}
+    volumes:
+      - ${QBITTORRENT_APP_DATA?error}/config:/config
+      - ${MEDIA_DIRPATH?error}/torrents:/data/torrents                # torrent downloads go here
+    network_mode: service:gluetun
+    healthcheck:
+      test: curl --silent 'https://ipleak.net/json/' | grep --silent 'AirVPN'
+
+
+  # upon re-creation, will need to add ALC tag 'apple-tv' to give apple-tv access
+  plex:
+    extends:
+      file: ./../common/services.yml
+      service: lsio
+    image: lscr.io/linuxserver/plex:latest
+    environment:
+      - VERSION=docker
+      - PLEX_CLAIM=${PLEX_CLAIM:-''}
+    volumes:
+      - ${PLEX_APP_DATA?error}/config:/config:rw
+      - ${MEDIA_DIRPATH?error}/media/tv:/tv:ro
+      - ${MEDIA_DIRPATH?error}/media/music:/music:ro
+      - ${MEDIA_DIRPATH?error}/media/movies:/movies:ro
+    networks:
+      - plex-ts
+      - overseerr
+    cap_add:
+      - FOWNER
+      - DAC_OVERRIDE
+    healthcheck:
+      test: ["CMD", "curl", "--connect-timeout", "15", "--silent", "--show-error", "--fail", "http://localhost:32400/identity"]
+      interval: 1m00s
+      timeout: 15s
+      retries: 3
+      start_period: 1m00s
+
+
+  radarr:
+    extends:
+      file: ./../common/services.yml
+      service: lsio
+    image: lscr.io/linuxserver/radarr:latest
+    volumes:
+      - ${MEDIA_DIRPATH?error}:/data
+      - ${RADARR_APP_DATA?error}/config:/config
+    network_mode: service:radarr-ts
+
+  sonarr:
+    extends:
+      file: ./../common/services.yml
+      service: lsio
+    image: lscr.io/linuxserver/sonarr:latest
+    volumes:
+      - ${MEDIA_DIRPATH?error}:/data
+      - ${SONARR_APP_DATA?error}/config:/config
+    networks:
+      - sonarr-ts
+      - bazarr
+      - sabnzbd
+      - doplarr
+      - prowlarr
+      - overseerr
+      - recyclarr
+      - qbittorrent
+      - unpackerr
+
+  lidarr:
+    extends:
+      file: ./../common/services.yml
+      service: lsio
+    image: lscr.io/linuxserver/lidarr:latest
+    volumes:
+      - ${MEDIA_DIRPATH?error}:/data
+      - ${LIDARR_APP_DATA?error}/config:/config
+    networks:
+      - lidarr-ts
+      - sabnzbd
+      - prowlarr
+      - qbittorrent
+      - unpackerr
+
+  readarr:
+    extends:
+      file: ./../common/services.yml
+      service: lsio
+    image: lscr.io/linuxserver/readarr:develop
+    volumes:
+      - ${READARR_APP_DATA?error}/config:/config
+      - ${MEDIA_DIRPATH?error}:/data
+    networks:
+      - readarr-ts
+      - readarr
+      - calibre
+      - sabnzbd
+      - qbittorrent
+      - prowlarr
+      - unpackerr
+
+  calibre:
+    extends:
+      file: ./../common/services.yml
+      service: lsio
+    read_only: false
+    image: lscr.io/linuxserver/calibre:latest
+    security_opt:
+      - seccomp:unconfined #optional
+    networks:
+      - calibre
+      - calibre-ts
+    cap_add:
+      - DAC_OVERRIDE
+      - NET_BIND_SERVICE
+    volumes:
+      - ${CALIBRE_APP_DATA}/config:/config
+      - ${MEDIA_DIRPATH?error}:/data
+    expose:
+      - 8080
+      - 8081
+      - 8181
+
+  cw: # calibre-web
+    extends:
+      file: ./../common/services.yml
+      service: lsio
+    image: lscr.io/linuxserver/calibre-web:latest
+    read_only: false
+    networks:
+      - calibre-web-ts
+    environment:
+      - OAUTHLIB_RELAX_TOKEN_SCOPE=0 #optional
+    volumes:
+      - ${CALIBRE_WEB_APP_DATA}/config:/config
+      - ${MEDIA_DIRPATH?error}:/data
+    expose:
+      - 8083
+
+  prowlarr:
+    extends:
+      file: ./../common/services.yml
+      service: lsio
+    image: lscr.io/linuxserver/prowlarr:latest
+    volumes:
+      - ${PROWLARR_APP_DATA?error}/config:/config
+    networks:
+      - prowlarr
+      - prowlarr-ts
+
+
+  bazarr:
+    extends:
+      file: ./../common/services.yml
+      service: lsio
+    image: lscr.io/linuxserver/bazarr:latest
+    volumes:
+      - ${MEDIA_DIRPATH?error}:/data
+      - ${BAZARR_APP_DATA?error}/config:/config
+    networks:
+      - bazarr-ts
+      - bazarr
+
+
+  # qb-binhex:
+  #   extends:
+  #     file: ./../common/services.yml
+  #     service: binhex
+  #   image: binhex/arch-qbittorrentvpn:latest
+  #   configs:
+  #     - source: qbittorrent-openvpn
+  #       target: /config/openvpn/openvpn.ovpn
+  #   environment:
+  #     - WEBUI_PORT=${BINHEX_QBITTORRENT_INTERNAL_PORT?error}
+  #     - MAM_SESSION_COOKIE=${MAM_SESSION_COOKIE?error}
+  #     - VPN_INPUT_PORTS=${BINHEX_QBITTORRENT_INTERNAL_PORT}
+  #     - VPN_OUTPUT_PORTS=${SONARR_PORT},${RADARR_PORT},${LIDARR_PORT},${READARR_PORT}
+  #   volumes:
+  #     - ${BINHEX_QBITTORRENT_APP_DATA?error}/data:/data
+  #     - ${BINHEX_QBITTORRENT_APP_DATA?error}/config:/config
+  #     - ${MEDIA_DIRPATH?error}/torrents:/data/torrents:ro
+  #     - ${BINHEX_QBITTORRENT_USER_DATA?error}/vpn-scripts:/vpn-scripts:ro
+  #     - qbittorrent-mam-session-cookie:/mam-session-cookie
+  #   networks:
+  #     - qbittorrent
+  #     - qbittorrent-ts
+  #   cap_add:
+  #     - CHOWN
+  #     - FOWNER
+  #     - SETGID
+  #     - SETUID
+  #     - MKNOD       # create tun device if not mounted from host
+  #     - NET_RAW     # "can't initialize iptables table `filter': Permission denied"
+
+
+  # sab:
+  #   extends:
+  #     file: ./../common/services.yml
+  #     service: binhex
+  #   image: binhex/arch-sabnzbdvpn:latest
+  #   configs:
+  #     - source: sabnzbd-openvpn
+  #       target: /config/openvpn/openvpn.ovpn
+  #   volumes:
+  #     - ${SABNZBD_APP_DATA?error}/config:/config
+  #     - ${MEDIA_DIRPATH?error}/usenet:/data/usenet                            # nzb downloads go here
+  #     - ${SABNZBD_USER_DATA?error}/scripts:/scripts:ro,exec
+  #     - ${SABNZBD_APP_DATA?error}/nzb-file-backups:/nzb-file-backups
+  #     - ${SABNZBD_APP_DATA?error}/automated-configs-backup:/automated-configs-backup
+  #   networks:
+  #     - sab-ts
+  #     - sabnzbd
+  #   cap_add:
+  #     - CHOWN     # chown: changing ownership of '/usr/...': Operation not permitted
+  #     - SETGID    # couldn't setuid to 65534: Could not set groups of effective user
+  #     - SETUID    # child process was not spawned
+  #     - MKNOD     # create tun device if not mounted from host
+  #     - NET_RAW   # iptables v1.8.10 (legacy): can't initialize iptables table `filter'
+  #     - NET_ADMIN # required to establish vpn tunnel
+  #     - FSETID
+  #     - FOWNER
+
+
+  unpackerr:
+    extends:
+      file: ./../common/services.yml
+      service: defaults
+    image: golift/unpackerr:latest
+    user: ${PUID?error}:${PGID?error}
+    environment:
+      - UMASK=002
+      - TZ=${TZ?error}
+      - UN_LOG_FILE=/logs/unpackerr.log
+      - UN_DEBUG=false
+      - UNLOG_FILE_MB=10
+      - UN_LOG_FILES=100
+      - UN_INTERVAL=5m
+      - UN_FILE_MODE="0644"
+      - UN_DIR_MODE="0755"
+      # SONARR
+      - UN_SONARR_0_URL=http://sonarr:${SONARR_PORT}
+      - UN_SONARR_0_API_KEY=${SONARR_API_KEY?error}
+      - UN_SONARR_PATHS_0=/data
+      - UN_SONARR_PROTOCOLS=usenet,torrent
+      # RADARR
+      - UN_RADARR_0_URL=http://radarr:${RADARR_PORT}
+      - UN_RADARR_0_API_KEY=${RADARR_API_KEY?error}
+      - UN_RADARR_PATHS_0=/data
+      - UN_RADARR_PROTOCOLS=usenet,torrent
+      # LIDARR
+      - UN_LIDARR_0_URL=http://lidarr:${LIDARR_PORT}
+      - UN_LIDARR_0_API_KEY=${LIDARR_API_KEY?error}
+      - UN_LIDARR_PATHS_0=/data
+      - UN_LIDARR_PROTOCOLS=usenet,torrrent
+      # READARR
+      - UN_READARR_0_URL=http://readarr:${READARR_PORT}
+      - UN_READARR_0_API_KEY=${READARR_API_KEY?error}
+      - UN_READARR_PATHS_0=/data
+      - UN_READARR_PROTOCOLS=usenet,torrrent
+    volumes:
+      - ${MEDIA_DIRPATH?error}:/data
+      - ${RADARR_APP_DATA?error}/config:/config
+      - ${UNPACKERR_APP_DATA}/logs:/logs
+    networks:
+      - unpackerr
+
+
+
+  overseerr:
+    extends:
+      file: ./../common/services.yml
+      service: lsio
+    image: lscr.io/linuxserver/overseerr:latest
+    volumes:
+      - ${OVERSEERR_APP_DATA?error}/config:/config
+    networks:
+      - overseerr-ts
+      - overseerr
+
+
+
+  # plex-meta-manager:
+  #   image: lscr.io/linuxserver/plex-meta-manager:latest
+  #   #image: meisnate12/plex-meta-manager
+  #   # restart: no
+  #   environment:
+  #     - TZ=${TZ?error}
+  #     - PUID=${PUID?error}
+  #     - PGID=${PGID?error}
+  #     - PMM_RUN=True #False                               # set to 'True' to execute immediately
+  #     # - PMM_TIME=06:00                              # run after plex nightly schedule
+  #     # - S6_READ_ONLY_ROOT=1
+  #     - PMM_NO_MISSING=true
+  #     - PMM_DELETE_COLLECTIONS=False                # set to 'True' to clear all collections before running
+  #   volumes:
+  #     - ${PLEX_META_MANAGER_APP_DATA?error}/config:/config
+  #   networks:
+  #     - plex
+  #   cap_drop:
+  #     - ALL
+  #   cap_add:
+  #     - CHOWN
+  #     - SETGID
+  #     - SETUID
+
+
+  # SYNC TRASH GUIDES SETTINGS (AND OTHERS) TO SONARR AND RADARR
+  recyclarr:
+    extends:
+      file: ./../common/services.yml
+      service: defaults
+    image: ghcr.io/recyclarr/recyclarr:latest
+    user: ${PUID?error}:${PGID?error}
+    environment:
+      - RECYCLARR_CREATE_CONFIG=true
+    volumes:
+      - ${RECYCLARR_APP_DATA?error}/config:/config
+    networks:
+      - recyclarr
+    # profiles: [service]
+

@@ -1,0 +1,169 @@
+---
+
+services:
+
+  change-detection:
+    image: dgtlmoon/changedetection.io
+    restart: always
+    networks:
+      - change-detection-ts
+    volumes:
+      - change-detection-datastore:/datastore
+
+  autoheal:
+    extends:
+      file: ./../common/services.yml
+      service: defaults
+    image: willfarrell/autoheal
+    # read_only: false
+    cap_add: [ALL]
+    networks:
+      - autoheal
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=autoheal
+      - DOCKER_SOCK=tcp://socket-proxy:2375
+      - AUTOHEAL_INTERVAL=5
+    # entrypoint: tail -f /dev/null
+
+  # diun:
+  #   image: crazymax/diun:latest
+  #   command: serve
+  #   volumes:
+  #     - "./data:/data"
+  #     - "/var/run/docker.sock:/var/run/docker.sock"
+  #   environment:
+  #     - "TZ=Europe/Paris"
+  #     - "DIUN_WATCH_WORKERS=20"
+  #     - "DIUN_WATCH_SCHEDULE=0 */6 * * *"
+  #     - DIUN_PROVIDERS_DOCKER_ENDPOINT="tcp://socket-proxy"
+  #     - "DIUN_WATCH_JITTER=30s"
+  #     - "DIUN_PROVIDERS_DOCKER=true"
+  #   labels:
+  #     - "diun.enable=true"
+  #   restart: always
+
+  # watchtower:
+  #   image: containrrr/watchtower
+  #   environment:
+  #     - DOCKER_HOST=socket-proxy
+  #   volumes:
+  #       - /var/run/docker.sock:/var/run/docker.sock
+  #   networks:
+  #     - watchtower
+
+  # apprise:
+  #   image: lscr.io/linuxserver/apprise-api:latest
+  #   # container_name: apprise-api
+  #   environment:
+  #     - PUID=${PUID?error}
+  #     - PGID=${PGID?error}
+  #     - TZ=${TZ?error}
+  #     - APPRISE_ATTACH_SIZE=5 #mb, 0 = off, /attachments mount required
+  #   volumes:
+  #     - ${APPRISE_APP_DATA}/config:/config
+  #   network_mode: service:apprise-ts
+  #   tmpfs:
+  #     - /attachments
+  #   restart: unless-stopped
+  #   # ports:
+  #     # - 8000:8000
+
+  fake-data-generator:
+    image: ghcr.io/josh1703658784/fake-address-generator-docker:feature-hardcode-selected-states
+    networks:
+      - fake-data-generator
+    restart: unless-stopped
+#
+  portainer:
+    image: portainer/portainer-ce:2.21.1
+    restart: unless-stopped
+    networks:
+      - portainer-ts
+      - portainer
+      # - socket-proxy
+    depends_on:
+      - socket-proxy
+    volumes:
+      - ${PORTAINER_APP_DATA?error}/data:/data
+
+  socket-proxy:
+    image: lscr.io/linuxserver/socket-proxy:latest
+    environment:
+      - ALLOW_RESTARTS=1   # DEFAULT=0 | service: portainer,autoheal
+      - ALLOW_STOP=0
+      - ALLOW_START=0
+      - AUTH=0
+      - BUILD=0
+      - COMMIT=0
+      - CONFIGS=0
+      - CONTAINERS=1       # DEFAULT=0 | service: portainer,autoheal
+      - DISABLE_IPV6=1     # DEFAULT=0
+      - DISTRIBUTION=0
+      - EVENTS=0           # DEFAULT=1
+      - EXEC=0
+      - GRPC=0
+      - IMAGES=0
+      - INFO=0
+      - LOG_LEVEL=info
+      - NETWORKS=0
+      - NODES=0
+      - PING=0             # DEFAULT=1
+      - PLUGINS=0
+      - POST=0
+      - SECRETS=0
+      - SERVICES=0
+      - SESSION=0
+      - SOCKET_PATH=/var/run/docker.sock
+      - SWARM=0
+      - SYSTEM=0
+      - TASKS=0
+      - VERSION=0          # DEFAULT=1
+      - VOLUMES=0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    cap_drop: [ALL]
+    cap_add:
+      - SETGID
+    networks:
+      - socket-proxy
+      - portainer
+      - watchtower
+      - autoheal
+    read_only: true
+    tmpfs:
+      - /run
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    restart: always
+    networks:
+      - uptime-kuma-ts
+      - socket-proxy
+    # ports:
+      # - 3001:3001
+    volumes:
+      - ${UPTIME_KUMA_APP_DATA}:/app/data
+
+#   adguard:
+#     restart: unless-stopped
+#     image: adguard/adguardhome
+#     # volumes:
+#     #   - /opt/adguardhome/work
+#     #   - /opt/adguardhome/conf
+#     # ports:
+#     #   - 53:53/tcp
+#     #   - 53:53/udp
+#     #   # - 67:67/udp
+#     #   # - 68:68/udp
+#     #   - 80:80/tcp
+#     #   - 443:443/tcp
+#     #   - 443:443/udp
+#     #   - 3000:3000/tcp
+#     #   - 853:853/tcp
+#     #   - 784:784/udp
+#     #   - 853:853/udp
+#     #   - 8853:8853/udp
+#     #   - 5443:5443/tcp
+#     #   - 5443:5443/udp
+#     networks: [adguard]
