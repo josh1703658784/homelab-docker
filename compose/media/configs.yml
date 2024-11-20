@@ -70,7 +70,7 @@ configs:
           "$${TS_CERT_DOMAIN}:443": {
             "Handlers": {
               "/": {
-                "Proxy": "http://localhost:${RADARR_PORT?error}"
+                "Proxy": "http://radarr:${RADARR_PORT?error}"
               }
             }
           }
