@@ -1,20 +1,17 @@
 ---
 
-# OFFICIAL: https://tailscale.dev/blog/docker-mod-tailscale
-# UNofficial: docker + tailscale: https://mrpowergamerbr.com/us/blog/2023-03-20-untangling-your-network-tailscale-in-docker-compose/
-
-
 services:
 
-
   miniflux:
+    extends:
+      file: ./../common/services.yml
+      service: defaults
     image: miniflux/miniflux:latest
     healthcheck:
       test: ["CMD", "/usr/bin/miniflux", "-healthcheck", "auto"]
     depends_on:
       db:
         condition: service_healthy
-    restart: always
     network_mode: service:miniflux-ts
     environment:
       - DATABASE_URL=postgres://${POSTGRES_USER?error}:${POSTGRES_PASSWORD?error}@db/${POSTGRES_DB?error}?sslmode=disable
@@ -24,8 +21,15 @@ services:
       - ADMIN_PASSWORD=${MINIFLUX_PASS?error}
 
   db:
+    extends:
+      file: ./../common/services.yml
+      service: defaults
     image: postgres:15
-    restart: always
+    cap_add:
+     - SETGID
+     - SETUID
+     - CHOWN
+     - DAC_OVERRIDE
     networks:
       - db
     environment:
@@ -38,49 +42,11 @@ services:
       test: ["CMD", "pg_isready", "-U", "miniflux"]
       interval: 10s
 
-  # rsshub-vpn:
-  #   image: binhex/arch-int-vpn:latest
-  #   restart: unless-stopped
-  #   # read_only: true
-  #   environment:
-  #     - TZ=${TZ?error}
-  #     # - PUID=${PUID?error}
-  #     # - PGID=${PGID?error}
-  #     - VPN_ENABLED=yes
-  #     - WEBUI_PORT=${RSSHUB_PORT?error}
-  #     - VPN_PROV=${BINHEX_VPN_PROVIDER?error}
-  #     - VPN_CLIENT=wireguard
-  #     - LAN_NETWORK=${BINHEX_LAN_NETWORK?error}
-  #     - NAME_SERVERS=${BINHEX_NAME_SERVERS?error}
-  #   # tmpfs:
-  #     # - /config
-  #   volumes:
-  #     # - /config
-  #     - ${RSSHUB_VPN_USER_DATA?error}/airvpn-config:/config/wireguard # expected: "sed: couldn't open temporary file /config/openvpn/sed<random>: Read-only file system"
-  #     # - ${QBITTORRENT_USER_DATA?error}/vpn-scripts:/vpn-scripts:ro
-  #     # - qb-mam-session-cookie:/mam-session-cookie
-  #   networks:
-  #     - rsshub-vpn
-  #   # cap_drop:
-  #     # - ALL
-  #   cap_add:
-  #     - CHOWN
-  #     - SETGID
-  #     - SETUID
-  #     - MKNOD                                                     # create tun device if not mounted from host
-  #     - NET_RAW                                                   # "can't initialize iptables table `filter': Permission denied"
-  #     - NET_ADMIN                                                 # required to establish vpn tunnel
-  #   # entrypoint: tail -f /dev/null
-  #   entrypoint: ["/bin/bash", "/usr/local/bin/init.sh"]
-  #   configs:
-  #     - source: rsshub-vpn-supervisor
-  #       target: /etc/supervisor/conf.d/vpn-only.conf
-
-
   rsshub:
+    extends:
+      file: ./../common/services.yml
+      service: defaults
     image: diygod/rsshub:chromium-bundled
-    restart: always
-    # network_mode: service:binhex
     environment:
       NODE_ENV: production
       CACHE_TYPE: redis
@@ -98,8 +64,10 @@ services:
       - redis
 
   redis:
+    extends:
+      file: ./../common/services.yml
+      service: defaults
     image: redis:alpine
-    restart: always
     networks:
       - redis
     volumes:
@@ -110,3 +78,6 @@ services:
       timeout: 10s
       retries: 5
       start_period: 5s
+    cap_add:
+     - SETGID
+     - SETUID
