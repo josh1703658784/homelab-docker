@@ -1,9 +1,6 @@
 ---
 
-# @TODO review these https://teddit.net/r/radarr/comments/hbwnb2/a_list_of_all_companion_tools_and_software/
-# @TODO https://github.com/TheUltimateC0der/Listrr
-
-name: compose-utilities #@TODO remove and recreate all services
+name: utilities
 
 include:
   - path: ./services.yml
@@ -11,70 +8,36 @@ include:
       - ./../common/.envrc
       - ./../common/.secrets
       - ./.envrc
-      - ./.secrets
 
   - path: ./tailscale.yml
     env_file:
       - ./../common/.envrc
       - ./../common/.secrets
       - ./.envrc
-      - ./.secrets
 
   - path: ./configs.yml
     env_file:
       - ./../common/.envrc
       - ./../common/.secrets
       - ./.envrc
-      - ./.secrets
-
-
-
-#   - path: ./mattermost.docker/docker-compose.without-nginx.yml.yml
-#     env_file:
-#       - ./../common/.envrc
-#       - ./../common/.secrets
-#       - ./.envrc
-#       - ./.secrets
-#
-#   - path: ./mattermost.docker/docker-compose.yml
-#     env_file:
-#       - ./../common/.envrc
-#       - ./../common/.secrets
-#       - ./.envrc
-#       - ./.secrets
-
 
 volumes:
-  fake-data-generator-ts:
-  fileserver-ts:
-  portainer-ts:
-  dsm-ts:
-  rclone:
   change-detection-datastore:
   change-detection-ts:
-  srm-ts:
-  adguard-ts:
-  uptime-kuma:
+  dsm-ts:
+  fake-data-generator-ts:
+  portainer-ts:
   uptime-kuma-ts:
-  apprise-ts:
-  watchtower-ts:
-
+  uptime-kuma:
 
 networks:
-  fake-data-generator:
-  fileserver:
-  portainer:
-    internal: true
-  socket-proxy:
+  autoheal:
     internal: true
   dsm:
   change-detection-ts:
-  srm:
-  adguard:
+  fake-data-generator-ts:
+  portainer:
+    internal: true
+  portainer-ts:
   uptime-kuma:
   uptime-kuma-ts:
-  portainer-ts:
-  apprise:
-  watchtower:
-  autoheal:
-    internal: true

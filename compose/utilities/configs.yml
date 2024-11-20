@@ -1,64 +1,6 @@
 
 configs:
 
-  # srm-ts:
-  #   content: |
-  #     {
-  #       "TCP": {
-  #         "443": {
-  #           "HTTPS": true
-  #         }
-  #       },
-  #       "Web": {
-  #         "$${TS_CERT_DOMAIN}:443": {
-  #           "Handlers": {
-  #             "/": {
-  #               "Proxy": "http://192.168.10.1:8000"
-  #             }
-  #           }
-  #         }
-  #       }
-  #     }
-
-  watchtower-ts:
-    content: |
-      {
-        "TCP": {
-          "443": {
-            "HTTPS": true
-          }
-        },
-        "Web": {
-          "$${TS_CERT_DOMAIN}:443": {
-            "Handlers": {
-              "/": {
-                "Proxy": "http://localhost:${APPRISE_PORT?error}"
-              }
-            }
-          }
-        }
-      }
-
-  apprise-ts:
-    content: |
-      {
-        "TCP": {
-          "443": {
-            "HTTPS": true
-          }
-        },
-        "Web": {
-          "$${TS_CERT_DOMAIN}:443": {
-            "Handlers": {
-              "/": {
-                "Proxy": "http://localhost:${APPRISE_PORT?error}"
-              }
-            }
-          }
-        }
-      }
-
-
   dsm-ts:
     content: |
       {
@@ -71,13 +13,12 @@ configs:
           "$${TS_CERT_DOMAIN}:443": {
             "Handlers": {
               "/": {
-                "Proxy": "http://host.docker.internal:${DSM_EXTERNAL_PORT?error}"
+                "Proxy": "http://host.docker.internal:${HOST_DSM_PORT?error}"
               }
             }
           }
         }
       }
-
 
   uptime-kuma-ts:
     content: |
