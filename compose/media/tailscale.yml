@@ -5,38 +5,22 @@
 # find: \${([A-Z_]+)}
 # replace: ${$1?error}
 
+# <TEMPLATE>
+# -ts:
+#   extends:
+#     file: ./../common/services.yml
+#     service: tailscale
+#   networks:
+#     - -ts
+#   volumes:
+#     - -ts:${TS_STATE_DIR?error}
+#   environment:
+#     - TS_SERVE_CONFIG=/-ts
+#     - TS_HOSTNAME=
+#   configs:
+#     - -ts
+
 services:
-
-  # -ts:
-  #   extends:
-  #     file: ./../common/services.yml
-  #     service: tailscale
-  #   networks:
-  #     - -ts
-  #   volumes:
-  #     - -ts:${TS_STATE_DIR?error}
-  #   environment:
-  #     - TS_SERVE_CONFIG=/-ts
-  #     - TS_HOSTNAME=
-  #   configs:
-  #     - -ts
-
-  transmission-ts:
-    extends:
-      file: ./../common/services.yml
-      service: tailscale
-    environment:
-      - TS_SERVE_CONFIG=/transmission-ts
-      - TS_HOSTNAME=transmission
-      - TS_EXTRA_ARGS=--advertise-tags=tag:slippi,tag:service,tag:container
-    volumes:
-      - transmission-ts:${TS_STATE_DIR?error}
-    tmpfs:
-      - /tmp
-    networks:
-      - transmission-ts
-    configs:
-      - transmission-ts
 
   plex-ts:
     extends:
@@ -53,35 +37,10 @@ services:
     configs:
       - plex-ts
 
-  # radarr-ts:
-  #   extends:
-  #     file: ./../common/services.yml
-  #     service: tailscale
-  #   networks:
-  #     - radarr-ts
-  #   volumes:
-  #     - radarr-ts:${TS_STATE_DIR?error}
-  #   environment:
-  #     - TS_SERVE_CONFIG=/radarr-ts
-  #     - TS_HOSTNAME=radarr
-  #   configs:
-  #     - radarr-ts
-
   radarr-ts:
     extends:
       file: ./../common/services.yml
       service: tailscale
-    hostname: radarr
-    networks:
-      - radarr-ts
-      - bazarr
-      - doplarr
-      - sabnzbd
-      - prowlarr
-      - overseerr
-      - recyclarr
-      - qbittorrent
-      - unpackerr
     volumes:
       - radarr-ts:${TS_STATE_DIR?error}
     environment:
@@ -89,7 +48,8 @@ services:
       - TS_HOSTNAME=radarr
     configs:
       - radarr-ts
-
+    networks:
+      - radarr-ts
 
   sonarr-ts:
     extends:
@@ -118,7 +78,6 @@ services:
       - TS_HOSTNAME=lidarr
     configs:
       - lidarr-ts
-
 
   readarr-ts:
     extends:
@@ -154,7 +113,6 @@ services:
       service: tailscale
     networks:
       - calibre-web-ts
-      # - calibre-web
     volumes:
       - calibre-web-ts:${TS_STATE_DIR?error}
     environment:
@@ -192,10 +150,7 @@ services:
     configs:
       - bazarr-ts
 
-
-  # qb if i need to ever type it out
-  # qbittorrent otherwise
-  qb-ts:
+  qb-ts: # qbittorrent
     extends:
       file: ./../common/services.yml
       service: tailscale
@@ -222,22 +177,6 @@ services:
       - TS_HOSTNAME=nzb
     configs:
       - nzbget-ts
-
-
-  sab-ts:
-    extends:
-      file: ./../common/services.yml
-      service: tailscale
-    networks:
-      - sab-ts
-    volumes:
-      - sab-ts:${TS_STATE_DIR?error}
-    environment:
-      - TS_SERVE_CONFIG=/sab-ts
-      - TS_HOSTNAME=sab
-    configs:
-      - sab-ts
-
 
   overseerr-ts:
     extends:

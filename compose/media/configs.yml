@@ -1,8 +1,7 @@
 
 configs:
 
-
-  transmission-ts:
+  qbittorrent-ts:
     content: |
       {
         "TCP": {
@@ -14,7 +13,7 @@ configs:
           "$${TS_CERT_DOMAIN}:443": {
             "Handlers": {
               "/": {
-                "Proxy": "http://gluetun:${TRANSMISSION_PORT?error}"
+                "Proxy": "http://qbittorrent:${QBITTORRENT_INTERNAL_PORT?error}"
               }
             }
           }
@@ -33,7 +32,7 @@ configs:
           "$${TS_CERT_DOMAIN}:443": {
             "Handlers": {
               "/": {
-                "Proxy": "http://gluetun:${NZBGET_PORT?error}"
+                "Proxy": "http://nzbget:${NZBGET_PORT?error}"
               }
             }
           }
@@ -117,7 +116,6 @@ configs:
         }
       }
 
-
   readarr-ts:
     content: |
       {
@@ -136,7 +134,6 @@ configs:
           }
         }
       }
-
 
   calibre-ts:
     content: |
@@ -166,7 +163,6 @@ configs:
           }
         }
       }
-
 
   calibre-web-ts:
     content: |
@@ -219,44 +215,6 @@ configs:
             "Handlers": {
               "/": {
                 "Proxy": "http://bazarr:${BAZARR_PORT?error}"
-              }
-            }
-          }
-        }
-      }
-
-  qbittorrent-ts:
-    content: |
-      {
-        "TCP": {
-          "443": {
-            "HTTPS": true
-          }
-        },
-        "Web": {
-          "$${TS_CERT_DOMAIN}:443": {
-            "Handlers": {
-              "/": {
-                "Proxy": "http://gluetun:${QBITTORRENT_INTERNAL_PORT?error}"
-              }
-            }
-          }
-        }
-      }
-
-  sab-ts:
-    content: |
-      {
-        "TCP": {
-          "443": {
-            "HTTPS": true
-          }
-        },
-        "Web": {
-          "$${TS_CERT_DOMAIN}:443": {
-            "Handlers": {
-              "/": {
-                "Proxy": "http://sab:${SABNZBD_INTERNAL_PORT?error}"
               }
             }
           }

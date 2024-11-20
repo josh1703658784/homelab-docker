@@ -5,7 +5,7 @@
 # @TODO https://blog.gitguardian.com/how-to-improve-your-docker-containers-security-cheat-sheet/
 
 
-name: compose-media #@TODO remove and recreate all services
+name: media #@TODO remove and recreate all services
 
 include:
 
@@ -36,33 +36,30 @@ volumes:
   bazarr-ts:
   calibre-ts:
   calibre-web-ts:
+  gluetun:
   lidarr-ts:
+  nzbget-main:
+  nzbget-ts:
   overseerr-ts:
   plex-ts:
   prowlarr-ts:
-  qb-mam-session-cookie:
-  qbittorrent-mam-session-cookie:
   qbittorrent-ts:
   radarr-ts:
   readarr-ts:
-  sab-ts:
+  slippi-transmission-ts:
   sonarr-ts:
-  gluetun:
-  nzbget-ts:
-  transmission-ts:
-
 
 networks:
   bazarr-ts:
   bazarr:
   calibre-ts:
   calibre-web-ts:
-  calibre:
   calibre-web:
-    # internal: true
-  doplarr:
+  calibre:
+  gluetun:
   lidarr-ts:
-  minio:
+  lidarr:
+  nzbget:
   overseerr-ts:
   overseerr:
   plex-ts:
@@ -75,10 +72,11 @@ networks:
   readarr-ts:
   readarr:
   recyclarr:
-  sab-ts:
-  sabnzbd:
+    internal: true
   sonarr-ts:
+  sonarr:
   unpackerr:
     internal: true
   nzbget-ts:
-  transmission-ts:
+  slippi-transmission-ts:
+  radarr:

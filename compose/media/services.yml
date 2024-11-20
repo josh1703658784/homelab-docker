@@ -22,84 +22,11 @@
 # - DAC_OVERRIDE
 # - NET_BIND_SERVICE
 
-
-# mitigate top-level dir mounting to support hardlinks
-# - /data/media/tv                                      # . mitigate top-level dir mounting
-# - /data/media/music                                   # .
-# - /data/media/movies                                  # .
-#                                                       # .
-# - /data/torrents/tv                                   # .
-# - /data/torrents/music                                # .
-# - /data/torrents/movies                               # .
-# - /data/torrents/incomplete                           # .
-#                                                       # .
-# - /data/usenet/incomplete                             # .
-# - /data/usenet/complete/tv                            # .
-# - /data/usenet/complete/music                         # .
-# - /data/usenet/complete/movies                        # /
-
-
-# add secrets: https://docs.docker.com/compose/use-secrets/
-# add configs: https://docs.docker.com/reference/compose-file/configs/
-
 # tmpfs volume permissions syntax: https://github.com/docker/cli/issues/698#issuecomment-429688027
 
 # https://projectatomic.io/blog/2015/12/making-docker-images-write-only-in-production/
 
 services:
-
-  gluetun:
-    extends:
-      file: ./../common/services.yml
-      service: defaults
-    image: qmcgaw/gluetun
-    restart: always
-    read_only: false
-    cap_add:
-      - NET_ADMIN
-      - CHOWN
-      - MKNOD
-      - NET_RAW
-      - DAC_OVERRIDE
-      - NET_BIND_SERVICE
-    sysctls:
-      - net.ipv6.conf.all.disable_ipv6=0
-    labels:
-      - autoheal=true
-    networks:
-      qbittorrent-ts:
-        aliases:
-          - qb
-      nzbget-ts:
-        aliases:
-          - nzbget
-      transmission-ts:
-        aliases:
-          - transmission
-    volumes:
-      - gluetun:/gluetun
-    expose:
-      - 8888      # HTTP proxy
-      - 8388/tcp  # Shadowsocks
-      - 8388/udp  # Shadowsocks
-      - 8080      # qBittorrent
-      - 6789      # nzbget
-      - 9091      # transmission-slippi
-    environment:
-      # See https://github.com/qdm12/gluetun-wiki/tree/main/setup#setup
-      - VPN_SERVICE_PROVIDER=${GLUETUN_VPN_SERVICE_PROVIDER?error}
-      - SERVER_COUNTRIES=${GLUETUN_SERVER_COUNTRIES?error}
-      - WIREGUARD_PRIVATE_KEY=${GLUETUN_WIREGUARD_PRIVATE_KEY?error}
-      - WIREGUARD_PRESHARED_KEY=${GLUETUN_WIREGUARD_PRESHARED_KEY?error}
-      - WIREGUARD_ADDRESSES=${GLUETUN_WIREGUARD_ADDRESSES?error}
-      - VPN_TYPE=wireguard
-      - WIREGUARD_IMPLEMENTATION=userspace
-      - DOT=on
-      - DOT_IPV6=off
-      - DOT_PROVIDERS=quad9
-      - FIREWALL_VPN_INPUT_PORTS=${QBITTORRENT_TORRENTING_PORT}
-      # - FIREWALL_INPUT_PORTS=${QBITTORRENT_TORRENTING_PORT}
-      - FIREWALL_DEBUG=on
 
   nzb:
     extends:
@@ -118,9 +45,12 @@ services:
       - PUID=${PUID?error}
     volumes:
       - /app/nzbget
-      - ${NZBGET_APP_DATA}/config:/config
-      - ${MEDIA_DIRPATH?error}/usenet:/data/usenet:ro
-    network_mode: service:gluetun
+      - nzbget-main:/main
+      - ${NZBGET_USER_DATA?error}/scripts:/scripts
+      - ${NZBGET_APP_DATA?error}/config:/config
+      - ${MEDIA_DIRPATH?error}/usenet:/data/usenet
+    network_mode: service:vpn # service:vpn at bottom of file
+
 
   qb:
     extends:
@@ -134,13 +64,31 @@ services:
       - TORRENTING_PORT=${QBITTORRENT_TORRENTING_PORT}
     volumes:
       - ${QBITTORRENT_APP_DATA?error}/config:/config
-      - ${MEDIA_DIRPATH?error}/torrents:/data/torrents                # torrent downloads go here
-    network_mode: service:gluetun
+      - ${MEDIA_DIRPATH?error}/torrents:/data/torrents
     healthcheck:
       test: curl --silent 'https://ipleak.net/json/' | grep --silent 'AirVPN'
+    network_mode: service:vpn # service:vpn at bottom of file
 
 
-  # upon re-creation, will need to add ALC tag 'apple-tv' to give apple-tv access
+  slippi-qb:
+    extends:
+      file: ./../common/services.yml
+      service: lsio
+    image: lscr.io/linuxserver/qbittorrent:latest
+    labels:
+      - autoheal=true
+    # environment:
+    #   - WEBUI_PORT=${QBITTORRENT_INTERNAL_PORT?error}
+    #   - TORRENTING_PORT=${QBITTORRENT_TORRENTING_PORT}
+    # volumes:
+    #   - ${QBITTORRENT_APP_DATA?error}/config:/config
+    #   - ${MEDIA_DIRPATH?error}/torrents:/data/torrents
+    healthcheck:
+      test: curl --silent 'https://ipleak.net/json/' | grep --silent 'AirVPN'
+    network_mode: service:vpn
+    profiles: [slippi]
+
+
   plex:
     extends:
       file: ./../common/services.yml
@@ -155,7 +103,8 @@ services:
       - ${MEDIA_DIRPATH?error}/media/music:/music:ro
       - ${MEDIA_DIRPATH?error}/media/movies:/movies:ro
     networks:
-      - plex-ts
+      - plex # SELF
+      - plex-ts # SELF-TS
       - overseerr
     cap_add:
       - FOWNER
@@ -176,7 +125,17 @@ services:
     volumes:
       - ${MEDIA_DIRPATH?error}:/data
       - ${RADARR_APP_DATA?error}/config:/config
-    network_mode: service:radarr-ts
+    networks:
+      - radarr # SELF
+      - radarr-ts # SELF-TS
+      - bazarr
+      - nzbget
+      - overseerr
+      - prowlarr
+      - qbittorrent
+      - recyclarr
+      - unpackerr
+
 
   sonarr:
     extends:
@@ -187,15 +146,16 @@ services:
       - ${MEDIA_DIRPATH?error}:/data
       - ${SONARR_APP_DATA?error}/config:/config
     networks:
-      - sonarr-ts
+      - sonarr # SELF
+      - sonarr-ts # SELF-TS
       - bazarr
-      - sabnzbd
-      - doplarr
-      - prowlarr
+      - nzbget
       - overseerr
-      - recyclarr
+      - prowlarr
       - qbittorrent
+      - recyclarr
       - unpackerr
+
 
   lidarr:
     extends:
@@ -206,11 +166,12 @@ services:
       - ${MEDIA_DIRPATH?error}:/data
       - ${LIDARR_APP_DATA?error}/config:/config
     networks:
-      - lidarr-ts
-      - sabnzbd
+      - lidarr # SELF
+      - lidarr-ts # SELF-TS
       - prowlarr
       - qbittorrent
       - unpackerr
+
 
   readarr:
     extends:
@@ -221,13 +182,13 @@ services:
       - ${READARR_APP_DATA?error}/config:/config
       - ${MEDIA_DIRPATH?error}:/data
     networks:
-      - readarr-ts
-      - readarr
+      - readarr # SELF
+      - readarr-ts # SELF-TS
       - calibre
-      - sabnzbd
       - qbittorrent
       - prowlarr
       - unpackerr
+
 
   calibre:
     extends:
@@ -236,10 +197,10 @@ services:
     read_only: false
     image: lscr.io/linuxserver/calibre:latest
     security_opt:
-      - seccomp:unconfined #optional
+      - seccomp:unconfined # optional
     networks:
-      - calibre
-      - calibre-ts
+      - calibre # SELF
+      - calibre-ts # SELF-TS
     cap_add:
       - DAC_OVERRIDE
       - NET_BIND_SERVICE
@@ -251,6 +212,7 @@ services:
       - 8081
       - 8181
 
+
   cw: # calibre-web
     extends:
       file: ./../common/services.yml
@@ -258,14 +220,16 @@ services:
     image: lscr.io/linuxserver/calibre-web:latest
     read_only: false
     networks:
-      - calibre-web-ts
+      - calibre-web # SELF
+      - calibre-web-ts # SELF-TS
     environment:
-      - OAUTHLIB_RELAX_TOKEN_SCOPE=0 #optional
+      - OAUTHLIB_RELAX_TOKEN_SCOPE=0 # optional
     volumes:
       - ${CALIBRE_WEB_APP_DATA}/config:/config
       - ${MEDIA_DIRPATH?error}:/data
     expose:
       - 8083
+
 
   prowlarr:
     extends:
@@ -275,8 +239,8 @@ services:
     volumes:
       - ${PROWLARR_APP_DATA?error}/config:/config
     networks:
-      - prowlarr
-      - prowlarr-ts
+      - prowlarr # SELF
+      - prowlarr-ts # SELF-TS
 
 
   bazarr:
@@ -288,67 +252,8 @@ services:
       - ${MEDIA_DIRPATH?error}:/data
       - ${BAZARR_APP_DATA?error}/config:/config
     networks:
-      - bazarr-ts
-      - bazarr
-
-
-  # qb-binhex:
-  #   extends:
-  #     file: ./../common/services.yml
-  #     service: binhex
-  #   image: binhex/arch-qbittorrentvpn:latest
-  #   configs:
-  #     - source: qbittorrent-openvpn
-  #       target: /config/openvpn/openvpn.ovpn
-  #   environment:
-  #     - WEBUI_PORT=${BINHEX_QBITTORRENT_INTERNAL_PORT?error}
-  #     - MAM_SESSION_COOKIE=${MAM_SESSION_COOKIE?error}
-  #     - VPN_INPUT_PORTS=${BINHEX_QBITTORRENT_INTERNAL_PORT}
-  #     - VPN_OUTPUT_PORTS=${SONARR_PORT},${RADARR_PORT},${LIDARR_PORT},${READARR_PORT}
-  #   volumes:
-  #     - ${BINHEX_QBITTORRENT_APP_DATA?error}/data:/data
-  #     - ${BINHEX_QBITTORRENT_APP_DATA?error}/config:/config
-  #     - ${MEDIA_DIRPATH?error}/torrents:/data/torrents:ro
-  #     - ${BINHEX_QBITTORRENT_USER_DATA?error}/vpn-scripts:/vpn-scripts:ro
-  #     - qbittorrent-mam-session-cookie:/mam-session-cookie
-  #   networks:
-  #     - qbittorrent
-  #     - qbittorrent-ts
-  #   cap_add:
-  #     - CHOWN
-  #     - FOWNER
-  #     - SETGID
-  #     - SETUID
-  #     - MKNOD       # create tun device if not mounted from host
-  #     - NET_RAW     # "can't initialize iptables table `filter': Permission denied"
-
-
-  # sab:
-  #   extends:
-  #     file: ./../common/services.yml
-  #     service: binhex
-  #   image: binhex/arch-sabnzbdvpn:latest
-  #   configs:
-  #     - source: sabnzbd-openvpn
-  #       target: /config/openvpn/openvpn.ovpn
-  #   volumes:
-  #     - ${SABNZBD_APP_DATA?error}/config:/config
-  #     - ${MEDIA_DIRPATH?error}/usenet:/data/usenet                            # nzb downloads go here
-  #     - ${SABNZBD_USER_DATA?error}/scripts:/scripts:ro,exec
-  #     - ${SABNZBD_APP_DATA?error}/nzb-file-backups:/nzb-file-backups
-  #     - ${SABNZBD_APP_DATA?error}/automated-configs-backup:/automated-configs-backup
-  #   networks:
-  #     - sab-ts
-  #     - sabnzbd
-  #   cap_add:
-  #     - CHOWN     # chown: changing ownership of '/usr/...': Operation not permitted
-  #     - SETGID    # couldn't setuid to 65534: Could not set groups of effective user
-  #     - SETUID    # child process was not spawned
-  #     - MKNOD     # create tun device if not mounted from host
-  #     - NET_RAW   # iptables v1.8.10 (legacy): can't initialize iptables table `filter'
-  #     - NET_ADMIN # required to establish vpn tunnel
-  #     - FSETID
-  #     - FOWNER
+      - bazarr # SELF
+      - bazarr-ts # SELF-TS
 
 
   unpackerr:
@@ -392,8 +297,7 @@ services:
       - ${RADARR_APP_DATA?error}/config:/config
       - ${UNPACKERR_APP_DATA}/logs:/logs
     networks:
-      - unpackerr
-
+      - unpackerr # SELF
 
 
   overseerr:
@@ -404,9 +308,8 @@ services:
     volumes:
       - ${OVERSEERR_APP_DATA?error}/config:/config
     networks:
-      - overseerr-ts
-      - overseerr
-
+      - overseerr # SELF
+      - overseerr-ts # SELF-TS
 
 
   # plex-meta-manager:
@@ -425,6 +328,7 @@ services:
   #   volumes:
   #     - ${PLEX_META_MANAGER_APP_DATA?error}/config:/config
   #   networks:
+  #     - plex-meta-manager # SELF
   #     - plex
   #   cap_drop:
   #     - ALL
@@ -446,6 +350,70 @@ services:
     volumes:
       - ${RECYCLARR_APP_DATA?error}/config:/config
     networks:
-      - recyclarr
-    # profiles: [service]
+      - recyclarr # SELF
 
+
+  vpn:
+    extends:
+      file: ./../common/services.yml
+      service: defaults
+    image: qmcgaw/gluetun
+    restart: always
+    read_only: false
+    cap_add:
+      - NET_ADMIN
+      - CHOWN
+      - MKNOD
+      - NET_RAW
+      - DAC_OVERRIDE
+      - NET_BIND_SERVICE
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
+    labels:
+      - autoheal=true
+    networks:
+      gluetun: # SELF
+      nzbget-ts:
+        aliases:
+          - nzbget
+      qbittorrent-ts:
+        aliases:
+          - qbittorrent
+      sonarr:
+        aliases:
+          - nzbget
+          - qbittorrent
+      radarr:
+        aliases:
+          - nzbget
+          - qbittorrent
+      lidarr:
+        aliases:
+          - nzbget
+          - qbittorrent
+      readarr:
+        aliases:
+          - nzbget
+          - qbittorrent
+    volumes:
+      - gluetun:/gluetun
+    expose:
+      - 8888      # HTTP proxy
+      - 8388/tcp  # Shadowsocks
+      - 8388/udp  # Shadowsocks
+      - 8080      # qBittorrent
+      - 6789      # nzbget
+    environment:
+      # See https://github.com/qdm12/gluetun-wiki/tree/main/setup#setup
+      - VPN_SERVICE_PROVIDER=${GLUETUN_VPN_SERVICE_PROVIDER?error}
+      - SERVER_COUNTRIES=${GLUETUN_SERVER_COUNTRIES?error}
+      - WIREGUARD_PRIVATE_KEY=${GLUETUN_WIREGUARD_PRIVATE_KEY?error}
+      - WIREGUARD_PRESHARED_KEY=${GLUETUN_WIREGUARD_PRESHARED_KEY?error}
+      - WIREGUARD_ADDRESSES=${GLUETUN_WIREGUARD_ADDRESSES?error}
+      - VPN_TYPE=wireguard
+      - WIREGUARD_IMPLEMENTATION=userspace
+      - DOT=on
+      - DOT_IPV6=off
+      - DOT_PROVIDERS=quad9
+      - FIREWALL_VPN_INPUT_PORTS=${QBITTORRENT_TORRENTING_PORT?error},${SLIPPI_TRANSMISSION_LISTENING_PORT?error}
+      - FIREWALL_DEBUG=off
