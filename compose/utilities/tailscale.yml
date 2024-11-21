@@ -32,19 +32,19 @@ services:
       - TS_SERVE_CONFIG=/dsm-ts
       - TS_HOSTNAME=dsm
 
-  uptime-kuma-ts:
+  kuma-ts:
     extends:
       file: ./../common/services.yml
       service: tailscale
     networks:
-      - uptime-kuma-ts
+      - kuma-ts
     volumes:
-      - uptime-kuma-ts:${TS_STATE_DIR?error}
+      - kuma-ts:${TS_STATE_DIR?error}
     configs:
-      - uptime-kuma-ts
+      - kuma-ts
     environment:
-      - TS_SERVE_CONFIG=/uptime-kuma-ts
-      - TS_HOSTNAME=uptime-kuma
+      - TS_SERVE_CONFIG=/kuma-ts
+      - TS_HOSTNAME=kuma
 
   portainer-ts:  # mostly for Harbour.app
     extends:

@@ -20,7 +20,7 @@ configs:
         }
       }
 
-  uptime-kuma-ts:
+  kuma-ts:
     content: |
       {
         "TCP": {
@@ -32,7 +32,7 @@ configs:
           "$${TS_CERT_DOMAIN}:443": {
             "Handlers": {
               "/": {
-                "Proxy": "http://uptime-kuma:${UPTIME_KUMA_PORT?error}"
+                "Proxy": "http://kuma:${UPTIME_KUMA_PORT?error}"
               }
             }
           }

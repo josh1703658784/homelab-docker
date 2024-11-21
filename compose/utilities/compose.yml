@@ -27,8 +27,8 @@ volumes:
   dsm-ts:
   fake-data-generator-ts:
   portainer-ts:
-  uptime-kuma-ts:
-  uptime-kuma:
+  kuma-ts:
+  kuma:
 
 networks:
   autoheal:
@@ -39,5 +39,5 @@ networks:
   portainer:
     internal: true
   portainer-ts:
-  uptime-kuma:
-  uptime-kuma-ts:
+  kuma:
+  kuma-ts:

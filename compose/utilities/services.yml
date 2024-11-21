@@ -3,53 +3,77 @@
 services:
 
   change-detection:
+    extends:
+      file: ./../common/services.yml
+      service: defaults
     image: dgtlmoon/changedetection.io
-    restart: always
     networks:
       - change-detection-ts # SELF-TS
     volumes:
-      - change-detection-datastore:/datastore
+      - ${CHANGE_DETECTION_APP_DATA?error}/datastore:/datastore
+
+  fake-data-generator:
+    extends:
+      file: ./../common/services.yml
+      service: lsio # based on base lsio image
+    image: ghcr.io/josh1703658784/fake-address-generator-docker:feature-hardcode-selected-states
+    networks:
+      - fake-data-generator-ts # SELF-TS
+
+  portainer:
+    extends:
+      file: ./../common/services.yml
+      service: defaults
+    image: portainer/portainer-ce:2.21.1
+    networks:
+      - portainer       # SELF
+      - portainer-ts    # SELF-TS
+    depends_on:
+      socket-proxy:     # service:socket-proxy at file bottom
+        restart: true
+        condition: service_healthy
+    volumes:
+      - ${PORTAINER_APP_DATA?error}/data:/data
 
   autoheal:
     extends:
       file: ./../common/services.yml
       service: defaults
     image: willfarrell/autoheal
-    cap_add: [ALL]
     networks:
-      - autoheal # SELF
+      - autoheal          # SELF
+    depends_on:
+      socket-proxy:       # service:socket-proxy at file bottom
+        restart: true
+        condition: service_healthy
     environment:
       - AUTOHEAL_CONTAINER_LABEL=autoheal
       - DOCKER_SOCK=tcp://socket-proxy:2375
       - AUTOHEAL_INTERVAL=5
 
-  fake-data-generator:
-    image: ghcr.io/josh1703658784/fake-address-generator-docker:feature-hardcode-selected-states
-    networks:
-      - fake-data-generator-ts # SELF-TS
-    restart: unless-stopped
-
-  portainer:
-    image: portainer/portainer-ce:2.21.1
-    restart: unless-stopped
-    networks:
-      - portainer-ts
-      - portainer
-    depends_on:
-      - socket-proxy
-    volumes:
-      - ${PORTAINER_APP_DATA?error}/data:/data
-
-  uptime-kuma:
+  kuma:
+    extends:
+      file: ./../common/services.yml
+      service: defaults
     image: louislam/uptime-kuma:1
-    restart: always
     networks:
-      - uptime-kuma # SELF
-      - uptime-kuma-ts # SELF-TS
+      - kuma      # SELF
+      - kuma-ts   # SELF-TS
     volumes:
       - ${UPTIME_KUMA_APP_DATA}:/app/data
+    cap_add:
+     - CHOWN
+     - SETGID
+     - SETUID
+    depends_on:
+      socket-proxy:     # service:socket-proxy at file bottom
+        restart: true
+        condition: service_healthy
 
   socket-proxy:
+    extends:
+      file: ./../common/services.yml
+      service: lsio
     image: lscr.io/linuxserver/socket-proxy:latest
     environment:
       - ALLOW_RESTARTS=1   # DEFAULT=0 | service: portainer,autoheal
@@ -84,14 +108,13 @@ services:
       - VOLUMES=0
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    restart: unless-stopped
-    cap_drop: [ALL]
-    cap_add:
-      - SETGID
     networks:
       - portainer
       - autoheal
-      - uptime-kuma
-    read_only: true
-    tmpfs:
-      - /run
+      - kuma
+    healthcheck:
+      test: ["CMD", "curl", "--silent", "socket-proxy:2375"]
+      interval: 10s
+      timeout: 2s
+      retries: 3
+      start_period: 0s
