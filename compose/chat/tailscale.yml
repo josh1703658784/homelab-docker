@@ -2,32 +2,6 @@
 
 services:
 
-  # matrix-ts:
-  #   extends:
-  #     file: ./../common/services.yml
-  #     service: tailscale-proxy
-  #   environment:
-  #     - TS_HOSTNAME=matrix
-  #     - TS_SERVE_PORT=${MATRIX_INTERNAL_PORT?error}
-  #   hostname: matrix
-  #   restart: always
-  #   volumes:
-  #     - matrix-ts:${TS_STATE_DIR?error}
-  #   tmpfs:
-  #     - /tmp
-  #   networks:
-  #     - matrix
-  #     - sliding-sync
-  #     - discord
-  #     - heisenbridge
-  #   cap_drop:
-  #     - ALL
-  #   cap_add:
-  #     - CHOWN
-  #     - SETGID
-  #     - SETUID
-
-
   conduit-ts:
     extends:
       file: ./../common/services.yml

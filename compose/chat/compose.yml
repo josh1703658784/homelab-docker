@@ -3,12 +3,16 @@
 name: chat
 
 include:
+
+  - path: ./secrets.yml
+
   - path: ./services.yml
     env_file:
       - ./../common/.envrc
       - ./../common/.secrets
       - ./.envrc
       - ./.secrets
+
   - path: ./tailscale.yml
     env_file:
       - ./../common/.envrc
@@ -24,16 +28,12 @@ include:
       - ./.secrets
 
 volumes:
-  postgres-data:
-  matrix-ts:
+  # postgres-data:
   conduit-db:
   conduit-ts:
   heisenbridge-appservice:
-  discord-sqlite:
 
 networks:
-  matrix:
-  sliding-sync:
-  discord:
+  # matrix:
   heisenbridge:
   conduit-ts:
