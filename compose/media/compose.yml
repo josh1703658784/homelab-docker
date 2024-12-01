@@ -48,6 +48,10 @@ volumes:
   readarr-ts:
   slippi-transmission-ts:
   sonarr-ts:
+  maintainerr-ts:
+  tautulli-ts:
+  autobrr-ts:
+  prefetcharr-ts:
 
 networks:
   bazarr-ts:
@@ -80,3 +84,13 @@ networks:
   nzbget-ts:
   slippi-transmission-ts:
   radarr:
+  decluttarr:
+    internal: true
+  maintainerr:
+  maintainerr-ts:
+  tautulli-ts:
+  tautulli:
+  autobrr-ts:
+  autobrr:
+  prefetcharr:
+  prefetcharr-ts:

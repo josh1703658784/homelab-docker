@@ -128,7 +128,7 @@ configs:
           "$${TS_CERT_DOMAIN}:443": {
             "Handlers": {
               "/": {
-                "Proxy": "http://readarr:${READARR_PORT}?error"
+                "Proxy": "http://readarr:${READARR_PORT?error}"
               }
             }
           }
@@ -239,3 +239,91 @@ configs:
           }
         }
       }
+
+  maintainerr-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          },
+          "8443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://maintainerr:${MAINTAINERR_UI_PORT?error}"
+              }
+            }
+          },
+          "$${TS_CERT_DOMAIN}:8443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://maintainerr:${MAINTAINERR_API_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+
+
+  tautulli-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://taut:${TAUTULLI_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+  autobrr-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://autobrr:${AUTOBRR_PORT?error}"
+              }
+            }
+          }
+        }
+      }
+
+  # prefetcharr-ts:
+  #     content: |
+  #       {
+  #         "TCP": {
+  #           "443": {
+  #             "HTTPS": true
+  #           }
+  #         },
+  #         "Web": {
+  #           "$${TS_CERT_DOMAIN}:443": {
+  #             "Handlers": {
+  #               "/": {
+  #                 "Proxy": "http://prefetcharr:${PREFETCHARR_PORT?error}"
+  #               }
+  #             }
+  #           }
+  #         }
+  #       }

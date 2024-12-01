@@ -7,21 +7,22 @@
 # TG / RECYCLARR: https://recyclarr.dev/wiki/
 
 # DEFUALT CAPABILITIES
-# - KILL
-# - CHOWN
-# - MKNOD
-# - SETGID
-# - SETUID
-# - FSETID
-# - FOWNER
-# - NET_RAW
-# - SETFCAP
-# - SETPCAP
-# - SYS_CHROOT
-# - AUDIT_WRITE
-# - DAC_OVERRIDE
-# - NET_BIND_SERVICE
+#      - KILL
+#      - CHOWN
+#      - MKNOD
+#      - SETGID
+#      - SETUID
+#      - FSETID
+#      - FOWNER
+#      - NET_RAW
+#      - SETFCAP
+#      - SETPCAP
+#      - SYS_CHROOT
+#      - AUDIT_WRITE
+#      - DAC_OVERRIDE
+#      - NET_BIND_SERVICE
 
+#      - CHOWN
 # tmpfs volume permissions syntax: https://github.com/docker/cli/issues/698#issuecomment-429688027
 
 # https://projectatomic.io/blog/2015/12/making-docker-images-write-only-in-production/
@@ -33,12 +34,12 @@ services:
       file: ./../common/services.yml
       service: lsio
     image: lscr.io/linuxserver/nzbget:latest
-    healthcheck:
-      test: curl --silent 'https://ipleak.net/json/' | grep -q 'AirVPN'
+    depends_on:
+      vpn:
+        condition: service_healthy
+        restart: true
     cap_add:
       - FOWNER
-    labels:
-      - autoheal=true
     environment:
       - TZ=${TZ?error}
       - PGID=${PGID?error}
@@ -57,37 +58,13 @@ services:
       file: ./../common/services.yml
       service: lsio
     image: lscr.io/linuxserver/qbittorrent:latest
-    labels:
-      - autoheal=true
     environment:
       - WEBUI_PORT=${QBITTORRENT_INTERNAL_PORT?error}
-      - TORRENTING_PORT=${QBITTORRENT_TORRENTING_PORT}
+      - TORRENTING_PORT=${QBITTORRENT_TORRENTING_PORT?error}
     volumes:
       - ${QBITTORRENT_APP_DATA?error}/config:/config
       - ${MEDIA_DIRPATH?error}/torrents:/data/torrents
-    healthcheck:
-      test: curl --silent 'https://ipleak.net/json/' | grep --silent 'AirVPN'
     network_mode: service:vpn # service:vpn at bottom of file
-
-
-  slippi-qb:
-    extends:
-      file: ./../common/services.yml
-      service: lsio
-    image: lscr.io/linuxserver/qbittorrent:latest
-    labels:
-      - autoheal=true
-    # environment:
-    #   - WEBUI_PORT=${QBITTORRENT_INTERNAL_PORT?error}
-    #   - TORRENTING_PORT=${QBITTORRENT_TORRENTING_PORT}
-    # volumes:
-    #   - ${QBITTORRENT_APP_DATA?error}/config:/config
-    #   - ${MEDIA_DIRPATH?error}/torrents:/data/torrents
-    healthcheck:
-      test: curl --silent 'https://ipleak.net/json/' | grep --silent 'AirVPN'
-    network_mode: service:vpn
-    profiles: [slippi]
-
 
   plex:
     extends:
@@ -106,6 +83,8 @@ services:
       - plex # SELF
       - plex-ts # SELF-TS
       - overseerr
+      - tautulli
+      - prefetcharr
     cap_add:
       - FOWNER
       - DAC_OVERRIDE
@@ -135,6 +114,8 @@ services:
       - qbittorrent
       - recyclarr
       - unpackerr
+      - decluttarr
+      - maintainerr
 
 
   sonarr:
@@ -155,6 +136,10 @@ services:
       - qbittorrent
       - recyclarr
       - unpackerr
+      - decluttarr
+      - maintainerr
+      - prefetcharr
+
 
 
   lidarr:
@@ -171,6 +156,7 @@ services:
       - prowlarr
       - qbittorrent
       - unpackerr
+      - decluttarr
 
 
   readarr:
@@ -188,6 +174,7 @@ services:
       - qbittorrent
       - prowlarr
       - unpackerr
+      - decluttarr
 
 
   calibre:
@@ -205,7 +192,7 @@ services:
       - DAC_OVERRIDE
       - NET_BIND_SERVICE
     volumes:
-      - ${CALIBRE_APP_DATA}/config:/config
+      - ${CALIBRE_APP_DATA?error}/config:/config
       - ${MEDIA_DIRPATH?error}:/data
     expose:
       - 8080
@@ -225,7 +212,7 @@ services:
     environment:
       - OAUTHLIB_RELAX_TOKEN_SCOPE=0 # optional
     volumes:
-      - ${CALIBRE_WEB_APP_DATA}/config:/config
+      - ${CALIBRE_WEB_APP_DATA?error}/config:/config
       - ${MEDIA_DIRPATH?error}:/data
     expose:
       - 8083
@@ -255,6 +242,87 @@ services:
       - bazarr # SELF
       - bazarr-ts # SELF-TS
 
+  maintainerr:
+    extends:
+      file: ./../common/services.yml
+      service: defaults
+    image: ghcr.io/jorenn92/maintainerr:latest
+    tmpfs:
+      - /.cache/node/corepack/v1
+    # container_name: maintainerr
+    user: ${PUID?error}:${PGID?error}
+    networks:
+      - maintainerr # SELF
+      - maintainerr-ts # SELF-TS
+      - plex
+      - tautulli
+    volumes:
+      - ${MAINTAINERR_APP_DATA?error}/data:/opt/data
+    # environment:
+      # - TZ=${TZ?error}
+    expose:
+      - 6246 # webui
+      - 3001 # api
+#      - DEBUG=true # uncomment to enable debug logs
+    # restart: unless-stopped
+
+  taut: # tautulli
+    extends:
+      file: ./../common/services.yml
+      service: lsio
+    image: lscr.io/linuxserver/tautulli:latest
+    networks:
+      - tautulli # SELF
+      - tautulli-ts # SELF-ts
+    volumes:
+      - /config:/config
+    expose:
+      - 8181 # webui
+
+
+
+  autobrr:
+    extends:
+      file: ./../common/services.yml
+      service: defaults
+    image: ghcr.io/s0up4200/autobrr-distroless:latest
+    volumes:
+      - /config:/config
+    expose:
+      - 7474
+    user: ":"
+    networks:
+      - autobrr # SELF
+      - autobrr-ts # SELF TS
+    # security_opt:
+      # - no-new-privileges:true
+
+
+
+  prefetcharr: # https://github.com/p-hueber/prefetcharr
+    extends:
+      file: ./../common/services.yml
+      service: defaults
+    image: phueber/prefetcharr:latest
+    user: ${PUID?error}:${PGID?error}
+    networks:
+      - prefetcharr
+      - prefetcharr-ts
+    environment:
+      - MEDIA_SERVER_TYPE=plex
+      - MEDIA_SERVER_URL=http://plex:${PLEX_PORT?error}
+      - MEDIA_SERVER_API_KEY=${PREFETCHARR_MEDIA_SERVER_API_KEY?error}
+      - SONARR_URL=http://sonarr:${SONARR_PORT?error}
+      - SONARR_API_KEY=${SONARR_API_KEY?error}
+      - LOG_DIR=/logs
+      - RUST_LOG=prefetcharr=debug
+      # Polling interval in seconds
+      - INTERVAL=900
+      # The last <NUM> episodes trigger a search
+      - REMAINING_EPISODES=2
+    volumes:
+      - /logs:/logs
+
 
   unpackerr:
     extends:
@@ -273,29 +341,29 @@ services:
       - UN_FILE_MODE="0644"
       - UN_DIR_MODE="0755"
       # SONARR
-      - UN_SONARR_0_URL=http://sonarr:${SONARR_PORT}
+      - UN_SONARR_0_URL=http://sonarr:${SONARR_PORT?error}
       - UN_SONARR_0_API_KEY=${SONARR_API_KEY?error}
       - UN_SONARR_PATHS_0=/data
       - UN_SONARR_PROTOCOLS=usenet,torrent
       # RADARR
-      - UN_RADARR_0_URL=http://radarr:${RADARR_PORT}
+      - UN_RADARR_0_URL=http://radarr:${RADARR_PORT?error}
       - UN_RADARR_0_API_KEY=${RADARR_API_KEY?error}
       - UN_RADARR_PATHS_0=/data
       - UN_RADARR_PROTOCOLS=usenet,torrent
       # LIDARR
-      - UN_LIDARR_0_URL=http://lidarr:${LIDARR_PORT}
+      - UN_LIDARR_0_URL=http://lidarr:${LIDARR_PORT?error}
       - UN_LIDARR_0_API_KEY=${LIDARR_API_KEY?error}
       - UN_LIDARR_PATHS_0=/data
       - UN_LIDARR_PROTOCOLS=usenet,torrrent
       # READARR
-      - UN_READARR_0_URL=http://readarr:${READARR_PORT}
+      - UN_READARR_0_URL=http://readarr:${READARR_PORT?error}
       - UN_READARR_0_API_KEY=${READARR_API_KEY?error}
       - UN_READARR_PATHS_0=/data
       - UN_READARR_PROTOCOLS=usenet,torrrent
     volumes:
       - ${MEDIA_DIRPATH?error}:/data
       - ${RADARR_APP_DATA?error}/config:/config
-      - ${UNPACKERR_APP_DATA}/logs:/logs
+      - ${UNPACKERR_APP_DATA?error}/logs:/logs
     networks:
       - unpackerr # SELF
 
@@ -310,6 +378,7 @@ services:
     networks:
       - overseerr # SELF
       - overseerr-ts # SELF-TS
+      - maintainerr
 
 
   # plex-meta-manager:
@@ -358,7 +427,6 @@ services:
       file: ./../common/services.yml
       service: defaults
     image: qmcgaw/gluetun
-    restart: always
     read_only: false
     cap_add:
       - NET_ADMIN
@@ -369,8 +437,8 @@ services:
       - NET_BIND_SERVICE
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=0
-    labels:
-      - autoheal=true
+    # labels:
+      # - autoheal=true
     networks:
       gluetun: # SELF
       nzbget-ts:
@@ -383,6 +451,7 @@ services:
         aliases:
           - nzbget
           - qbittorrent
+          - proxy
       radarr:
         aliases:
           - nzbget
@@ -394,6 +463,9 @@ services:
       readarr:
         aliases:
           - nzbget
+          - qbittorrent
+      decluttarr:
+        aliases:
           - qbittorrent
     volumes:
       - gluetun:/gluetun
@@ -417,3 +489,7 @@ services:
       - DOT_PROVIDERS=quad9
       - FIREWALL_VPN_INPUT_PORTS=${QBITTORRENT_TORRENTING_PORT?error},${SLIPPI_TRANSMISSION_LISTENING_PORT?error}
       - FIREWALL_DEBUG=off
+      - HTTPPROXY=on
+      - HTTPPROXY_LOG=on
+      # - HEALTH_TARGET_ADDRESS=cloudflare.com:443
+

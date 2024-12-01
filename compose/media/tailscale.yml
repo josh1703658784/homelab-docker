@@ -2,7 +2,7 @@
 
 # interpolation regex
 # https://docs.docker.com/compose/environment-variables/variable-interpolation/#interpolation-syntax
-# find: \${([A-Z_]+)}
+# find: ((?<!\$)\$\{([A-Z_]+))\}
 # replace: ${$1?error}
 
 # <TEMPLATE>
@@ -193,3 +193,47 @@ services:
     configs:
       - overseerr-ts
 
+  maintainerr-ts:
+    extends:
+      file: ./../common/services.yml
+      service: tailscale
+    networks:
+      - maintainerr-ts
+    volumes:
+      - maintainerr-ts:${TS_STATE_DIR?error}
+    environment:
+      - TS_SERVE_CONFIG=/maintainerr-ts
+      - TS_HOSTNAME=maintainerr
+      # - TS_EXTRA_ARGS=
+    configs:
+      - maintainerr-ts
+
+  taut-ts: # tautulli
+    extends:
+      file: ./../common/services.yml
+      service: tailscale
+    networks:
+      - tautulli-ts
+    volumes:
+      - tautulli-ts:${TS_STATE_DIR?error}
+    environment:
+      - TS_SERVE_CONFIG=/tautulli-ts
+      - TS_HOSTNAME=taut
+      # - TS_EXTRA_ARGS=
+    configs:
+      - tautulli-ts
+
+  autobrr-ts:
+      extends:
+        file: ./../common/services.yml
+        service: tailscale
+      networks:
+        - autobrr-ts
+      volumes:
+        - autobrr-ts:${TS_STATE_DIR?error}
+      environment:
+        - TS_SERVE_CONFIG=/autobrr-ts
+        - TS_HOSTNAME=autobrr
+        # - TS_EXTRA_ARGS=
+      configs:
+        - autobrr-ts
