@@ -10,12 +10,7 @@ services:
       file: ./../common/services.yml
       service: lsio
     image: lscr.io/linuxserver/transmission:latest
-    read_only: true
-    healthcheck:
-      test: curl --silent 'https://ipleak.net/json/' | grep -q 'AirVPN'
-    labels:
-      - autoheal=true
-    network_mode: "container:compose-media-gluetun-1"
+    network_mode: "container:vpn"
     tmpfs:
       - /data/watch
       - /watch

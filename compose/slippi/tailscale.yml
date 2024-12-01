@@ -4,38 +4,23 @@
 
 services:
 
-  # transmission-ts:
-  #   extends:
-  #     file: ./../common/services.yml
-  #     service: tailscale
-  #   environment:
-  #     - TS_SERVE_CONFIG=/transmission-ts
-  #     - TS_HOSTNAME=transmission
-  #     - TS_EXTRA_ARGS=--advertise-tags=tag:slippi,tag:service,tag:container
-  #   volumes:
-  #     - transmission-ts:${TS_STATE_DIR?error}
-  #   tmpfs:
-  #     - /tmp
-  #   networks:
-  #     - transmission-ts
-  #   configs:
-  #     - transmission-ts
-
-  # webdav-ts:
-  #   extends:
-  #     file: ./../common/services.yml
-  #     service: tailscale
-  #   networks:
-  #     - webdav-ts
-  #     - webdav-internal
-  #   volumes:
-  #     - webdav-ts:${TS_STATE_DIR?error}
-  #   configs:
-  #     - webdav-ts
-  #   environment:
-  #     - TS_SERVE_CONFIG=/webdav-ts
-  #     - TS_HOSTNAME=slippi-disk
-  #     - TS_EXTRA_ARGS=--advertise-tags=tag:slippi
+  transmission-ts:
+    extends:
+      file: ./../common/services.yml
+      service: tailscale
+    environment:
+      - TS_SERVE_CONFIG=/transmission-ts
+      - TS_HOSTNAME=transmission
+      - TS_EXTRA_ARGS=--advertise-tags=tag:slippi,tag:service,tag:container
+    volumes:
+      - transmission-ts:${TS_STATE_DIR?error}
+    tmpfs:
+      - /tmp
+    networks:
+      - transmission-ts
+      - vpn
+    configs:
+      - transmission-ts
 
   filestation-ts:
     extends:

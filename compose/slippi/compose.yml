@@ -4,6 +4,8 @@
 
 # name: compose-slippi #@TODO remove and recreate all services
 
+name: slippi
+
 include:
 
   - path: ./secrets.yml
@@ -38,3 +40,5 @@ networks:
   webdav-internal:
     internal: true
   filestation-ts:
+  vpn:
+    external: true
