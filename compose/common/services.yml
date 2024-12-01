@@ -12,31 +12,8 @@ services:
       - PGID=${PGID?error}
       - PUID=${PUID?error}
     cap_drop: [ALL]
-#
-#   binhex:
-#     # image: binhex/_____:latest
-#     restart: always
-#     read_only: false
-#     tmpfs:
-#       - /tmp
-#     environment:
-#       - TZ=${TZ?error}
-#       - PGID=${PGID?error}
-#       - PUID=${PUID?error}
-#       - VPN_ENABLED=yes
-#       # - WEBUI_PORT=${QBITTORRENT_INTERNAL_PORT?error}
-#       - VPN_PROV=${BINHEX_VPN_PROVIDER?error}
-#       - VPN_CLIENT=${BINHEX_VPN_CLIENT?error}
-#       - LAN_NETWORK=${BINHEX_LAN_NETWORK?error}
-#       - NAME_SERVERS=${BINHEX_NAME_SERVERS?error}
-#       - MAM_SESSION_COOKIE=${MAM_SESSION_COOKIE?error}
-#       - VPN_INPUT_PORTS=${QBITTORRENT_INTERNAL_PORT}
-#       - VPN_OUTPUT_PORTS=${SONARR_PORT},${RADARR_PORT},${LIDARR_PORT},${READARR_PORT}
-#     volumes:
-#       - /config/openvpn
-#     cap_drop: [ALL]
-#     cap_add:
-#       - NET_ADMIN   # required to establish vpn tunnel
+    security_opt:
+      - no-new-privileges:true
 
   lsio:
     # image: lscr.io/linuxserver/____:latest
@@ -54,29 +31,31 @@ services:
       - CHOWN
       - SETGID
       - SETUID
+    security_opt:
+      - no-new-privileges:true
 
-  tailscale-proxy:
-    image: ghcr.io/josh1703658784/tailscale-serve-https:v1.72.1
-    environment:
-      - TZ=${TZ?error}
-      - PUID=${PUID?error}
-      - PGID=${PGID?error}
-      - TS_AUTHKEY=${TS_AUTHKEY?error}
-      - TS_STATE_DIR=${TS_STATE_DIR?error}
-      - TS_USERSPACE=true
-      - TS_ACCEPT_DNS=true
-      - TS_SERVE_MODE=${TS_SERVE_MODE?error}
-    volumes:
-      - ${TS_STATE_DIR?error}
-    healthcheck:
-      test: ["CMD-SHELL", "tailscale status"]
-      interval: 1s
-      timeout: 5s
-      retries: 60
-    cap_add:
-      - net_admin
-      - sys_module
-    restart: unless-stopped
+  # tailscale-proxy:
+  #   image: ghcr.io/josh1703658784/tailscale-serve-https:v1.72.1
+  #   environment:
+  #     - TZ=${TZ?error}
+  #     - PUID=${PUID?error}
+  #     - PGID=${PGID?error}
+  #     - TS_AUTHKEY=${TS_AUTHKEY?error}
+  #     - TS_STATE_DIR=${TS_STATE_DIR?error}
+  #     - TS_USERSPACE=true
+  #     - TS_ACCEPT_DNS=true
+  #     - TS_SERVE_MODE=${TS_SERVE_MODE?error}
+  #   volumes:
+  #     - ${TS_STATE_DIR?error}
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "tailscale status"]
+  #     interval: 1s
+  #     timeout: 5s
+  #     retries: 60
+  #   cap_add:
+  #     - net_admin
+  #     - sys_module
+  #   restart: unless-stopped
 
   tailscale:
     image: tailscale/tailscale
@@ -97,45 +76,24 @@ services:
     restart: always
     cap_drop: [ALL]
     dns: 100.100.100.100
+    security_opt:
+      - no-new-privileges:true
 
-  tailscale-drive:
-    image: ghcr.io/josh1703658784/tailscale-drive:v1.76.1
-    environment:
-      - TZ=${TZ?error}
-      - TS_AUTHKEY=${TS_AUTHKEY?error}
-      - TS_STATE_DIR=${TS_STATE_DIR?error}
-      - TS_USERSPACE=true
-      - TS_ACCEPT_DNS=true
-    volumes:
-      - ${TS_STATE_DIR?error}
-    healthcheck:
-      test: ["CMD-SHELL", "tailscale status"]
-      interval: 1s
-      timeout: 5s
-      retries: 60
-    restart: always
-    cap_drop:
-      - ALL
-    # profiles: [tailscale]#
-#   # simple file server
-#   tailscale-fileserver:
-#     image: tailscale/tailscale:latest
-#     environment:
-#       - TZ=${TZ?error}
-#       - PUID=${PUID?error}
-#       - PGID=${PGID?error}
-#       - TS_AUTHKEY=${TS_AUTHKEY?error}
-#       - TS_STATE_DIR=${TS_STATE_DIR?error}
-#       - TS_USERSPACE=true
-#       - TS_ACCEPT_DNS=true
-#     volumes:
-#       - ${TS_STATE_DIR?error}
-#     healthcheck:
-#       test: ["CMD-SHELL", "tailscale status"]
-#       interval: 1s
-#       timeout: 5s
-#       retries: 60
-#     cap_add:
-#       - net_admin
-#       - sys_module
-#     restart: unless-stopped
+  # tailscale-drive:
+  #   image: ghcr.io/josh1703658784/tailscale-drive:v1.76.1
+  #   environment:
+  #     - TZ=${TZ?error}
+  #     - TS_AUTHKEY=${TS_AUTHKEY?error}
+  #     - TS_STATE_DIR=${TS_STATE_DIR?error}
+  #     - TS_USERSPACE=true
+  #     - TS_ACCEPT_DNS=true
+  #   volumes:
+  #     - ${TS_STATE_DIR?error}
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "tailscale status"]
+  #     interval: 1s
+  #     timeout: 5s
+  #     retries: 60
+  #   restart: always
+  #   cap_drop:
+  #     - ALL
