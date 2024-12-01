@@ -11,6 +11,8 @@ services:
       - change-detection-ts # SELF-TS
     volumes:
       - ${CHANGE_DETECTION_APP_DATA?error}/datastore:/datastore
+    environment:
+      - DISABLE_VERSION_CHECK=true
 
   fake-data-generator:
     extends:
@@ -35,21 +37,24 @@ services:
     volumes:
       - ${PORTAINER_APP_DATA?error}/data:/data
 
-  autoheal:
-    extends:
-      file: ./../common/services.yml
-      service: defaults
-    image: willfarrell/autoheal
-    networks:
-      - autoheal          # SELF
-    depends_on:
-      socket-proxy:       # service:socket-proxy at file bottom
-        restart: true
-        condition: service_healthy
-    environment:
-      - AUTOHEAL_CONTAINER_LABEL=autoheal
-      - DOCKER_SOCK=tcp://socket-proxy:2375
-      - AUTOHEAL_INTERVAL=5
+  # autoheal: # https://github.com/willfarrell/docker-autoheal
+  #   extends:
+  #     file: ./../common/services.yml
+  #     service: defaults
+  #   image: willfarrell/autoheal
+  #   networks:
+  #     - autoheal          # SELF
+  #   depends_on:
+  #     socket-proxy:       # service:socket-proxy at file bottom
+  #       restart: true
+  #       condition: service_healthy
+  #   environment:
+  #     - CURL_TIMEOUT=30
+  #     - AUTOHEAL_CONTAINER_LABEL=autoheal
+  #     - AUTOHEAL_INTERVAL=5
+  #     - AUTOHEAL_START_PERIOD=20
+  #     - AUTOHEAL_ONLY_MONITOR_RUNNING=true
+  #     - DOCKER_SOCK=tcp://socket-proxy:2375
 
   kuma:
     extends:
@@ -60,7 +65,7 @@ services:
       - kuma      # SELF
       - kuma-ts   # SELF-TS
     volumes:
-      - ${UPTIME_KUMA_APP_DATA}:/app/data
+      - ${UPTIME_KUMA_APP_DATA?error}:/app/data
     cap_add:
      - CHOWN
      - SETGID
