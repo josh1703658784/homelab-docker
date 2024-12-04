@@ -5,7 +5,7 @@
 # @TODO https://blog.gitguardian.com/how-to-improve-your-docker-containers-security-cheat-sheet/
 
 
-name: media #@TODO remove and recreate all services
+name: media
 
 include:
 
@@ -52,6 +52,7 @@ volumes:
   tautulli-ts:
   autobrr-ts:
   prefetcharr-ts:
+  mam-cookie:
 
 networks:
   bazarr-ts:

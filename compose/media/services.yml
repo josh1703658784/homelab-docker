@@ -27,7 +27,11 @@
 
 # https://projectatomic.io/blog/2015/12/making-docker-images-write-only-in-production/
 
+# ip
+# curl --silent 'https://ipleak.net/json/'
+
 services:
+
 
   nzb:
     extends:
@@ -58,6 +62,10 @@ services:
       file: ./../common/services.yml
       service: lsio
     image: lscr.io/linuxserver/qbittorrent:latest
+    depends_on:
+      vpn:
+        condition: service_healthy
+        restart: true
     environment:
       - WEBUI_PORT=${QBITTORRENT_INTERNAL_PORT?error}
       - TORRENTING_PORT=${QBITTORRENT_TORRENTING_PORT?error}
@@ -65,6 +73,29 @@ services:
       - ${QBITTORRENT_APP_DATA?error}/config:/config
       - ${MEDIA_DIRPATH?error}/torrents:/data/torrents
     network_mode: service:vpn # service:vpn at bottom of file
+
+
+  # https://github.com/myanonamouse/seedboxapi
+  qb-mam-cookie: # This container is needed for authenticating with MaM
+    extends:
+      file: ./../common/services.yml
+      service: defaults
+    image: myanonamouse/seedboxapi
+    user: ${PUID}:${PGID}
+    tmpfs:
+      - /tmp
+    depends_on:
+      vpn:
+        condition: service_healthy
+        restart: true
+    network_mode: service:vpn
+    volumes:
+      - mam-cookie:/config
+    environment:
+      - DEBUG=1
+      - mam_id=${MAM_COOKIE?error}
+      - interval=60 # minimum allowed
+
 
   plex:
     extends:
@@ -275,7 +306,7 @@ services:
       - tautulli # SELF
       - tautulli-ts # SELF-ts
     volumes:
-      - /config:/config
+      - ${TAUTULLI_APP_DATA?error}/config:/config
     expose:
       - 8181 # webui
 
@@ -287,7 +318,7 @@ services:
       service: defaults
     image: ghcr.io/s0up4200/autobrr-distroless:latest
     volumes:
-      - /config:/config
+      - ${AUTOBRR_APP_DATA?error}/config:/config
     expose:
       - 7474
     user: ":"
@@ -321,7 +352,7 @@ services:
       # The last <NUM> episodes trigger a search
       - REMAINING_EPISODES=2
     volumes:
-      - /logs:/logs
+      - ${PREFETCHARR_APP_DATA}/logs:/logs
 
 
   unpackerr:
@@ -423,9 +454,9 @@ services:
 
 
   vpn:
-    extends:
-      file: ./../common/services.yml
-      service: defaults
+    # extends:
+    #   file: ./../common/services.yml
+    #   service: defaults
     image: qmcgaw/gluetun
     read_only: false
     cap_add:
@@ -476,18 +507,16 @@ services:
       - 8080      # qBittorrent
       - 6789      # nzbget
     environment:
-      # See https://github.com/qdm12/gluetun-wiki/tree/main/setup#setup
       - VPN_SERVICE_PROVIDER=${GLUETUN_VPN_SERVICE_PROVIDER?error}
-      - SERVER_COUNTRIES=${GLUETUN_SERVER_COUNTRIES?error}
       - WIREGUARD_PRIVATE_KEY=${GLUETUN_WIREGUARD_PRIVATE_KEY?error}
       - WIREGUARD_PRESHARED_KEY=${GLUETUN_WIREGUARD_PRESHARED_KEY?error}
       - WIREGUARD_ADDRESSES=${GLUETUN_WIREGUARD_ADDRESSES?error}
       - VPN_TYPE=wireguard
       - WIREGUARD_IMPLEMENTATION=userspace
-      - DOT=on
-      - DOT_IPV6=off
-      - DOT_PROVIDERS=quad9
-      - FIREWALL_VPN_INPUT_PORTS=${QBITTORRENT_TORRENTING_PORT?error},${SLIPPI_TRANSMISSION_LISTENING_PORT?error}
+      - DNS_ADDRESS=${GLUETUN_DNS_ADDRESS}
+      - DOT_PROVIDER=quad9 # backup if the above internal dns fails
+      - SERVER_CITIES=${GLUETUN_SERVER_CITIES}
+      - FIREWALL_VPN_INPUT_PORTS=${QBITTORRENT_TORRENTING_PORT?error}
       - FIREWALL_DEBUG=off
       - HTTPPROXY=on
       - HTTPPROXY_LOG=on
