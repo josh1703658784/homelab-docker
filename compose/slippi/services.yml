@@ -10,7 +10,11 @@ services:
       file: ./../common/services.yml
       service: lsio
     image: lscr.io/linuxserver/transmission:latest
-    network_mode: "container:vpn"
+    network_mode: "service:vpn"
+    depends_on:
+      vpn:
+        condition: service_healthy
+        restart: true
     tmpfs:
       - /data/watch
       - /watch
@@ -24,3 +28,45 @@ services:
       - ${TRANSMISSION_APP_DATA?error}/config:/config
       - ${TRANSMISSION_DOWNLOADS?error}:/downloads
       - ${TRANSMISSION_UPLOADS?error}:/uploads:ro
+
+
+  vpn:
+    extends:
+      file: ./../common/services.yml
+      service: defaults
+    image: qmcgaw/gluetun
+    read_only: false
+    cap_add:
+      - NET_ADMIN
+      - CHOWN
+      - MKNOD
+      - NET_RAW
+      - DAC_OVERRIDE
+      - NET_BIND_SERVICE
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
+    networks:
+      gluetun: # SELF
+        aliases:
+          - transmission
+    volumes:
+      - gluetun:/gluetun
+    expose:
+      - 8888      # HTTP proxy
+      - 8388/tcp  # Shadowsocks
+      - 8388/udp  # Shadowsocks
+    environment:
+      - VPN_SERVICE_PROVIDER=${GLUETUN_VPN_SERVICE_PROVIDER?error}
+      - WIREGUARD_PRIVATE_KEY=${GLUETUN_WIREGUARD_PRIVATE_KEY?error}
+      - WIREGUARD_PRESHARED_KEY=${GLUETUN_WIREGUARD_PRESHARED_KEY?error}
+      - WIREGUARD_ADDRESSES=${GLUETUN_WIREGUARD_ADDRESSES?error}
+      - VPN_TYPE=wireguard
+      - WIREGUARD_IMPLEMENTATION=userspace
+      - DNS_ADDRESS=${GLUETUN_DNS_ADDRESS}
+      - DOT_PROVIDER=quad9 # backup if the above internal dns fails
+      - SERVER_CITIES=${GLUETUN_SERVER_CITIES}
+      - FIREWALL_VPN_INPUT_PORTS=${TRANSMISSION_LISTENING_PORT?error}
+      - FIREWALL_DEBUG=off
+      - HTTPPROXY=off
+      # - HTTPPROXY_LOG=off
+      - HEALTH_TARGET_ADDRESS=${GLUETUN_HEALTH_TARGET_ADDRESS}

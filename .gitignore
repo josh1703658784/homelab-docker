@@ -11,3 +11,4 @@ keyfile_password
 compose.media-extra.yml
 service-configs.sync/
 nova-tasks/
+compose/_playground

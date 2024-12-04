@@ -31,14 +31,10 @@ include:
 
 volumes:
   transmission-ts:
-  webdav-ts:
   filestation-ts:
+  gluetun:
 
 networks:
   transmission-ts:
-  webdav-ts:
-  webdav-internal:
-    internal: true
   filestation-ts:
-  vpn:
-    external: true
+  gluetun:
