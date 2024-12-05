@@ -9,14 +9,16 @@ services:
     environment:
       - TS_SERVE_CONFIG=/miniflux-ts
       - TS_HOSTNAME=rss
+      - TS_EXTRA_ARGS=--advertise-tags=tag:service,tag:rss
     volumes:
       - miniflux-ts:${TS_STATE_DIR?error}
     configs:
       - miniflux-ts
     networks:
-      - db
+      - miniflux-db
       - miniflux-ts
       - rsshub
+    dns: 100.100.100.100
 
   rsshub-ts:
     extends:
@@ -25,9 +27,25 @@ services:
     environment:
       - TS_SERVE_CONFIG=/rsshub-ts
       - TS_HOSTNAME=rsshub
+      - TS_EXTRA_ARGS=--advertise-tags=tag:service,tag:rss
     volumes:
       - rsshub-ts:${TS_STATE_DIR?error}
     networks:
       - rsshub-ts
     configs:
       - rsshub-ts
+
+  wallabag-ts:
+      extends:
+        file: ./../common/services.yml
+        service: tailscale
+      environment:
+        - TS_SERVE_CONFIG=/wallabag-ts
+        - TS_HOSTNAME=wallabag
+        - TS_EXTRA_ARGS=--advertise-tags=tag:service,tag:rss
+      volumes:
+        - wallabag-ts:${TS_STATE_DIR?error}
+      networks:
+        - wallabag-ts
+      configs:
+        - wallabag-ts

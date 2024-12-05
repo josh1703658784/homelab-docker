@@ -53,3 +53,23 @@ configs:
       user = nobody
       command = /home/nobody/watchdog.sh
       umask = 000
+
+
+  wallabag-ts:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://wallabag:${WALLABAG_PORT?error}"
+              }
+            }
+          }
+        }
+      }

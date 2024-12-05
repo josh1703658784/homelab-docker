@@ -10,17 +10,17 @@ services:
     healthcheck:
       test: ["CMD", "/usr/bin/miniflux", "-healthcheck", "auto"]
     depends_on:
-      db:
+      miniflux-db:
         condition: service_healthy
     network_mode: service:miniflux-ts
     environment:
-      - DATABASE_URL=postgres://${POSTGRES_USER?error}:${POSTGRES_PASSWORD?error}@db/${POSTGRES_DB?error}?sslmode=disable
+      - DATABASE_URL=postgres://${POSTGRES_USER?error}:${POSTGRES_PASSWORD?error}@${MINIFLUX_DB_HOSTNAME?error}/${POSTGRES_DB?error}?sslmode=disable
       - RUN_MIGRATIONS=1
       - CREATE_ADMIN=1
       - ADMIN_USERNAME=${MINIFLUX_USER?error}
       - ADMIN_PASSWORD=${MINIFLUX_PASS?error}
 
-  db:
+  miniflux-db:
     extends:
       file: ./../common/services.yml
       service: defaults
@@ -31,7 +31,7 @@ services:
      - CHOWN
      - DAC_OVERRIDE
     networks:
-      - db
+      - miniflux-db
     environment:
       - POSTGRES_USER=${POSTGRES_USER?error}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?error}
@@ -41,6 +41,8 @@ services:
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "miniflux"]
       interval: 10s
+
+# ------------------------------------------------------------------------------
 
   rsshub:
     extends:
@@ -66,18 +68,70 @@ services:
   redis:
     extends:
       file: ./../common/services.yml
-      service: defaults
-    image: redis:alpine
+      service: redis
     networks:
       - redis
     volumes:
       - redis-data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 5s
+
+# ------------------------------------------------------------------------------
+
+  wallabag:
+    extends:
+      file: ./../common/services.yml
+      service: defaults
+    image: wallabag/wallabag
+    read_only: false
+    environment:
+      # - MYSQL_ROOT_PASSWORD=${WALLABAG_MYSQL_ROOT_PASSWORD?error} # only pass in on init
+      - SYMFONY__ENV__DATABASE_DRIVER=${WALLABAG_DATABASE_DRIVER?error}
+      - SYMFONY__ENV__DATABASE_HOST=${WALLABAG_DATABASE_HOST?error}
+      - SYMFONY__ENV__DATABASE_PORT=${WALLABAG_DATABASE_PORT?error}
+      - SYMFONY__ENV__DATABASE_NAME=${WALLABAG_DATABASE_NAME?error}
+      - SYMFONY__ENV__DATABASE_USER=${WALLABAG_DATABASE_USER?error}
+      - SYMFONY__ENV__DATABASE_PASSWORD=${WALLABAG_DATABASE_PASSWORD?error}
+      - SYMFONY__ENV__DATABASE_CHARSET=${WALLABAG_DATABASE_CHARSET?error}
+      - SYMFONY__ENV__DATABASE_TABLE_PREFIX=${WALLABAG_DATABASE_TABLE_PREFIX?error}
+      - SYMFONY__ENV__DOMAIN_NAME=${WALLABAG_DOMAIN_NAME?error}
+      - SYMFONY__ENV__SERVER_NAME=${WALLABAG_SERVER_NAME?error}
+    expose:
+      - 80
+    networks:
+      - wallabag-db
+      - wallabag-redis
+      - wallabag-ts
+    volumes:
+      - wallabag-images:/var/www/wallabag/web/assets/images
     cap_add:
-     - SETGID
-     - SETUID
+      - CHOWN
+      - SETGID
+      - SETUID
+      - MKNOD
+      - DAC_OVERRIDE
+      - NET_BIND_SERVICE
+    healthcheck:
+      test: ["CMD", "wget" ,"--no-verbose", "--tries=1", "--spider", "http://localhost/api/info"]
+      interval: 1m
+      timeout: 3s
+    depends_on:
+      - wallabag-db
+      - wallabag-redis
+
+  wallabag-db:
+    extends:
+      file: ./../common/services.yml
+      service: mariadb
+    environment:
+      - MYSQL_ROOT_PASSWORD=${WALLABAG_MYSQL_ROOT_PASSWORD?error}
+    volumes:
+      - ${WALLABAG_DB_APP_DATA}/mysql:/var/lib/mysql
+    networks:
+      - wallabag-db
+
+
+  wallabag-redis:
+    extends:
+      file: ./../common/services.yml
+      service: redis
+    networks:
+      - wallabag-redis
