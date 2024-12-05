@@ -1,0 +1,11 @@
+---
+
+services:
+
+  # do not use outside of ./common
+  __base:
+    restart: always
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true

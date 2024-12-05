@@ -1,8 +1,12 @@
 services:
 
+
+
+
   defaults:
-    restart: always
-    read_only: true
+    extends:
+      file: __base.yml
+      service: __base
     tmpfs:
       - /tmp
       - /run
@@ -11,14 +15,12 @@ services:
       - TZ=${TZ?error}
       - PGID=${PGID?error}
       - PUID=${PUID?error}
-    cap_drop: [ALL]
-    security_opt:
-      - no-new-privileges:true
 
   lsio:
     # image: lscr.io/linuxserver/____:latest
-    restart: always
-    read_only: true
+    extends:
+      file: __base.yml
+      service: __base
     tmpfs:
       - /run:exec
       - /tmp
@@ -26,40 +28,19 @@ services:
       - TZ=${TZ?error}
       - PGID=${PGID?error}
       - PUID=${PUID?error}
-    cap_drop: [ALL]
     cap_add:
       - CHOWN
       - SETGID
       - SETUID
-    security_opt:
-      - no-new-privileges:true
 
-  # tailscale-proxy:
-  #   image: ghcr.io/josh1703658784/tailscale-serve-https:v1.72.1
-  #   environment:
-  #     - TZ=${TZ?error}
-  #     - PUID=${PUID?error}
-  #     - PGID=${PGID?error}
-  #     - TS_AUTHKEY=${TS_AUTHKEY?error}
-  #     - TS_STATE_DIR=${TS_STATE_DIR?error}
-  #     - TS_USERSPACE=true
-  #     - TS_ACCEPT_DNS=true
-  #     - TS_SERVE_MODE=${TS_SERVE_MODE?error}
-  #   volumes:
-  #     - ${TS_STATE_DIR?error}
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "tailscale status"]
-  #     interval: 1s
-  #     timeout: 5s
-  #     retries: 60
-  #   cap_add:
-  #     - net_admin
-  #     - sys_module
-  #   restart: unless-stopped
+
 
   tailscale:
+    extends:
+      file: __base.yml
+      service: __base
     image: tailscale/tailscale
-    # read_only: true # this needs resolved first https://github.com/docker/compose/issues/12031
+    read_only: false # this needs resolved first https://github.com/docker/compose/issues/12031
     environment:
       - TZ=${TZ?error}
       - TS_ACCEPT_DNS=true
@@ -73,27 +54,50 @@ services:
       interval: 1s
       timeout: 5s
       retries: 60
-    restart: always
-    cap_drop: [ALL]
     dns: 100.100.100.100
-    security_opt:
-      - no-new-privileges:true
 
-  # tailscale-drive:
-  #   image: ghcr.io/josh1703658784/tailscale-drive:v1.76.1
-  #   environment:
-  #     - TZ=${TZ?error}
-  #     - TS_AUTHKEY=${TS_AUTHKEY?error}
-  #     - TS_STATE_DIR=${TS_STATE_DIR?error}
-  #     - TS_USERSPACE=true
-  #     - TS_ACCEPT_DNS=true
-  #   volumes:
-  #     - ${TS_STATE_DIR?error}
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "tailscale status"]
-  #     interval: 1s
-  #     timeout: 5s
-  #     retries: 60
-  #   restart: always
-  #   cap_drop:
-  #     - ALL
+
+  mariadb:
+    extends:
+      file: __base.yml
+      service: __base
+    image: mariadb
+    tmpfs:
+      - /tmp
+      - /run/mysqld
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      interval: 20s
+      timeout: 3s
+    expose:
+      - 3306
+    cap_add:
+     - SETGID
+     - SETUID
+     - CHOWN
+     - DAC_OVERRIDE
+    environment:
+      - TZ=${TZ?error}
+      - PGID=${PGID?error}
+      - PUID=${PUID?error}
+
+  redis:
+    extends:
+      file: __base.yml
+      service: __base
+    image: redis:alpine
+    restart: always
+    read_only: true
+    cap_drop: [ALL]
+    cap_add:
+      - SETGID
+      - SETUID
+    environment:
+      - PGID=${PGID?error}
+      - PUID=${PUID?error}
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
